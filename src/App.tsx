@@ -28,6 +28,16 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      getCookies: (partition: string) => Promise<any>;
+      sendLog?: (msg: string) => void;
+    };
+  }
+}
+
 export default function BrowserLayout() {
   const [url, setUrl] = useState("https://google.com/");
   const [currentUrl, setCurrentUrl] = useState<string>("https://google.com/");
@@ -73,6 +83,8 @@ export default function BrowserLayout() {
     title?: string;
     favIcon?: string;
   }
+
+  // if you navigate you should also update the tab path
   const [tabs, setTabs] = useState<tab[]>([
     {
       id: 0,
@@ -81,16 +93,18 @@ export default function BrowserLayout() {
     },
   ]);
 
+  // just connection useEffect
   useEffect(() => {
     const connectWebSocket = () => {
       try {
+        // connect to the websockket and update the ref
         const ws = new WebSocket("ws://localhost:8080");
         wsRef.current = ws;
 
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
           handleWebSocketMessage(data);
-        };
+        }; // if new message like if created active the Shared bool
 
         ws.onclose = () => {
           setShared(false);
@@ -108,6 +122,7 @@ export default function BrowserLayout() {
     };
   }, []);
 
+  // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case "session_created":
@@ -115,9 +130,27 @@ export default function BrowserLayout() {
         setShared(true);
         break;
 
+      case "browser_tab_new":
+        setTabs((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            url: data.url,
+            favIcon: data.favicon,
+          },
+        ]);
+        break;
+
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
+        const joinedTabs =
+          data.tabs?.map((tab: tab) => ({
+            id: tab.id,
+            url: tab.url,
+            favIcon: tab.favIcon,
+          })) || [];
+        setTabs(joinedTabs);
         setChatMessages(data.messages || []);
         break;
 
@@ -133,7 +166,9 @@ export default function BrowserLayout() {
         break;
     }
   };
+  // add tab recognition and methods for adding and removing tabs
 
+  // same for here
   const createSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -148,12 +183,12 @@ export default function BrowserLayout() {
     );
   };
 
+  // sending the specific type to the server and it handles it via the MessageHandler and updates makes the client joins the session
   const joinSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
       return;
     }
-
     wsRef.current.send(
       JSON.stringify({
         type: "join_session",
@@ -163,6 +198,7 @@ export default function BrowserLayout() {
     );
   };
 
+  // send Message to host and other clients
   const sendChatMessage = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -171,6 +207,7 @@ export default function BrowserLayout() {
 
     if (!messageInput.trim()) return;
 
+    // send the Message to the host, the websocket which gets also displayed than for all other clients
     wsRef.current.send(
       JSON.stringify({
         type: "chat_message",
@@ -221,23 +258,44 @@ export default function BrowserLayout() {
 
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
+    const newTab = {
+      id: nextId,
+      url: url,
+      favIcon: origin + "/favicon.ico",
+    };
 
-    setTabs([
-      ...tabs,
-      {
-        id: nextId,
-        url: url,
-        favIcon: origin + "/favicon.ico",
-      },
-    ]);
+    setTabs([...tabs, newTab]);
     setNextId(nextId + 1);
     setActiveTabId(nextId);
     setUrl(url);
     setCurrentUrl(url);
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    // if (!messageInput.trim()) return;   // this caused the error
+
+    // send the Message to the host, the websocket which gets also displayed than for all other clients
+    wsRef.current.send(
+      JSON.stringify({
+        type: "add_browser_tab",
+        tab: newTab,
+      })
+    );
   };
 
   const closeTab = (id: number) => {
     setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== id));
+  };
+
+  const GetCookesForDebug = async () => {
+    const partition = "persist:QuickBrowse";
+    if (window.electronAPI?.getCookies) {
+      const result = await window.electronAPI.getCookies(partition);
+      setCookies(result);
+    }
   };
 
   return (
@@ -346,16 +404,13 @@ export default function BrowserLayout() {
 
                         <TabsContent value="create">
                           <Input
-                            onChange={(e) => {
-                              setSessionCode(e.target.value);
-                            }}
                             value={sessionCode}
                             placeholder="Create Code"
                             className="mb-2 mt-2 text-white"
                           ></Input>
                           <Input
                             onChange={(e) => {
-                              setUsername(username);
+                              setUsername(e.target.value);
                             }}
                             value={username}
                             placeholder="Enter Username"
@@ -539,7 +594,10 @@ export default function BrowserLayout() {
             <Dialog>
               <form>
                 <DialogTrigger asChild>
-                  <Button className="rounded-lg mb-3 ml-3">
+                  <Button
+                    className="rounded-lg mb-3 ml-3"
+                    onClick={GetCookesForDebug}
+                  >
                     <Bolt></Bolt>
                   </Button>
                 </DialogTrigger>
@@ -550,7 +608,7 @@ export default function BrowserLayout() {
                       Debug Console
                     </DialogTitle>
                     <DialogDescription>
-                      View Cookies, Localstorage and Console
+                      <pre>{JSON.stringify(cookes, null, 2)}</pre>
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>

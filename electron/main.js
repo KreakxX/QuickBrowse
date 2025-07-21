@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 import { Menu } from "electron";
 import { ipcMain, session } from 'electron';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -12,6 +11,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+icon: path.join(__dirname, '..', 'src', 'assets', 'Browser.ico'),
+
     title: "Quick Browse",
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
