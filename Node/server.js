@@ -53,13 +53,21 @@ function handleCreateSession(ws, message) {
   const sessionCode = generateSessionCode();   // generate a new Session Code
   const username = message.username || 'Anonym';
 
+  const initialTabs = message.currentTabs && message.currentTabs.length > 0 
+    ? message.currentTabs 
+    : [{
+        id: 0,
+        url: "https://google.com",
+        favIcon: "https://google.com/favicon.ico"
+      }];
+
   sessions[sessionCode] = {
     code: sessionCode,
     clients: [ws],
     messages: [],
-    tabs: [{
-
-    }]
+    tabs: initialTabs, 
+    nextId: message.nextId ,
+    activeTabId: message.activeTabId
   }; // generates a new Session with the code the clients and no messages
 
   ws.sessionCode = sessionCode;  // client belongs to this session the host in this case
@@ -100,7 +108,8 @@ function handleJoinSession(ws, message) {
     code: sessionCode,     // give response to cleints that its done connection
     username: username,
     messages: sessions[sessionCode].messages,
-    tabs: sessions[sessionCode].tabs
+    tabs: sessions[sessionCode].tabs,
+    nextId: sessions[sessionCode].nextId
   }));
 
   
@@ -178,7 +187,7 @@ function addNewSharedTab(ws, message) {
 
 
 // here we remove the message in the frontend
-function removeSharedTab(ws, newTab){
+function removeSharedTab(ws, message){
     const sessionCode = ws.sessionCode;
   if (!sessionCode || !sessions[sessionCode]) {
     ws.send(JSON.stringify({
@@ -188,18 +197,23 @@ function removeSharedTab(ws, newTab){
     return;
   }
 
-   const browserTab = {
-    type: 'browser_tab_removed', 
-    username: ws.username,       // else create new ChatMessage
-    url: newTab.url,
-    favicon: newTab.url + "/favicon.ico"
+    const newTab = {
+    id: message.tab.id,
+    url: message.tab.url,
+    favIcon: message.tab.favIcon
   };
 
   sessions[sessionCode].tabs = sessions[sessionCode].tabs.filter(
-  (tab) => tab.url !== browserTab.url
+  (tab) => tab.id !== newTab.id
   );  
+
+    const browserTab = {
+    type: 'browser_tab_old', 
+    id: message.tab.id,
+    url: message.tab.url,
+    favicon: message.tab.favIcon
+  };
   broadcastToSession(sessionCode,browserTab);
-  
 }
 
 // add the listening in the frontend

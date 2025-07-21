@@ -141,17 +141,16 @@ export default function BrowserLayout() {
         ]);
         break;
 
+      case "browser_tab_old":
+        setTabs((prev) => prev.filter((tab) => tab.id !== data.id));
+        break;
+
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
-        const joinedTabs =
-          data.tabs?.map((tab: tab) => ({
-            id: tab.id,
-            url: tab.url,
-            favIcon: tab.favIcon,
-          })) || [];
-        setTabs(joinedTabs);
+        setTabs(data.tabs);
         setChatMessages(data.messages || []);
+
         break;
 
       case "chat_message":
@@ -179,6 +178,9 @@ export default function BrowserLayout() {
       JSON.stringify({
         type: "create_session",
         username: username,
+        currentTabs: tabs,
+        nextId: nextId,
+        activeTabId: activeTabId,
       })
     );
   };
@@ -278,16 +280,35 @@ export default function BrowserLayout() {
     // if (!messageInput.trim()) return;   // this caused the error
 
     // send the Message to the host, the websocket which gets also displayed than for all other clients
-    wsRef.current.send(
-      JSON.stringify({
-        type: "add_browser_tab",
-        tab: newTab,
-      })
-    );
+    {
+      shared
+        ? wsRef.current.send(
+            JSON.stringify({
+              type: "add_browser_tab",
+              tab: newTab,
+            })
+          )
+        : null;
+    }
   };
 
   const closeTab = (id: number) => {
     setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== id));
+    const tabToDelete = tabs.find((tab) => tab.id === id);
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+    {
+      shared
+        ? wsRef.current.send(
+            JSON.stringify({
+              type: "remove_browser_tab",
+              tab: tabToDelete,
+            })
+          )
+        : null;
+    }
   };
 
   const GetCookesForDebug = async () => {
