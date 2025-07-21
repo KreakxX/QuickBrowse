@@ -1,32 +1,197 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
   Plus,
   ChevronsLeftRight,
+  X,
+  MessageCircle,
+  ArrowBigLeft,
+  ArrowBigRight,
+  Bolt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "./components/ui/scroll-area";
 export default function BrowserLayout() {
   const [url, setUrl] = useState("https://google.com/");
   const [currentUrl, setCurrentUrl] = useState<string>("https://google.com/");
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
-  const [activeTabId, setActiveTabId] = useState<number>(2);
+  const [activeTabId, setActiveTabId] = useState<number>(0);
+  const [shared, setShared] = useState<boolean>(true);
+  const [username, setUsername] = useState<string>("KreakxX");
+  const [cookes, setCookies] = useState<any[]>([]);
+
+  const wsRef = useRef<WebSocket | null>(null);
+
+  interface ChatMessage {
+    username?: string;
+    message?: string;
+  }
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [sessionCode, setSessionCode] = useState<string>("");
+
+  const [messageInput, setMessageInput] = useState<string>("");
+
+  const [savedTabs, setSavedTabs] = useState<savedTab[]>([
+    { url: "https://youtube.com", favIcon: "https://youtube.com/favicon.ico" },
+    { url: "https://github.com", favIcon: "https://github.com/favicon.ico" },
+    { url: "https://chatgpt.com", favIcon: "https://chatgpt.com/favicon.ico" },
+    { url: "https://x.com", favIcon: "https://x.com/favicon.ico" },
+    { url: "https://google.com", favIcon: "https://google.com/favicon.ico" },
+    { url: "https://claude.ai", favIcon: "https://claude.ai/favicon.ico" },
+    { url: "https://web.de", favIcon: "https://web.de/favicon.ico" },
+    { url: "https://canva.com", favIcon: "https://canva.com/favicon.ico" },
+  ]);
 
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
+  interface savedTab {
+    url: string;
+    favIcon?: string;
+  }
 
   interface tab {
     id: number;
     url: string;
     title?: string;
+    favIcon?: string;
   }
-  const [tabs, setTabs] = useState<tab[]>([]);
+  const [tabs, setTabs] = useState<tab[]>([
+    {
+      id: 0,
+      url: "https://google.com",
+      favIcon: "https://google.com/favicon.ico",
+    },
+  ]);
+
+  useEffect(() => {
+    const connectWebSocket = () => {
+      try {
+        const ws = new WebSocket("ws://localhost:8080");
+        wsRef.current = ws;
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        };
+
+        ws.onclose = () => {
+          setShared(false);
+          setTimeout(connectWebSocket, 3000);
+        };
+      } catch (error) {
+        console.error("Failed to connect WebSocket:", error);
+      }
+    };
+    connectWebSocket();
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
+
+  const handleWebSocketMessage = (data: any) => {
+    switch (data.type) {
+      case "session_created":
+        setSessionCode(data.code);
+        setShared(true);
+        break;
+
+      case "session_joined":
+        setSessionCode(data.code);
+        setShared(true);
+        setChatMessages(data.messages || []);
+        break;
+
+      case "chat_message":
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            username: data.username,
+            message: data.message,
+            timestamp: data.timestamp,
+          },
+        ]);
+        break;
+    }
+  };
+
+  const createSession = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "create_session",
+        username: username,
+      })
+    );
+  };
+
+  const joinSession = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "join_session",
+        code: sessionCode,
+        username: username,
+      })
+    );
+  };
+
+  const sendChatMessage = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    if (!messageInput.trim()) return;
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "chat_message",
+        message: messageInput,
+      })
+    );
+
+    setMessageInput("");
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       setUrl(currentUrl);
+
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTabId
+            ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
+            : tab
+        )
+      );
     }
   };
 
@@ -34,6 +199,7 @@ export default function BrowserLayout() {
     setActiveTabId(tabId);
     const tab = tabs.find((t) => t.id === tabId);
     if (tab) {
+      setUrl(tab.url);
       setCurrentUrl(tab.url);
     }
   };
@@ -54,24 +220,31 @@ export default function BrowserLayout() {
   };
 
   const addNewTab = (url: string) => {
+    const origin = new URL(url).origin;
+
     setTabs([
       ...tabs,
       {
         id: nextId,
         url: url,
+        favIcon: origin + "/favicon.ico",
       },
     ]);
     setNextId(nextId + 1);
     setActiveTabId(nextId);
+    setUrl(url);
+    setCurrentUrl(url);
+  };
+
+  const closeTab = (id: number) => {
+    setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== id));
   };
 
   return (
     <div className="h-screen bg-zinc-800 text-white flex flex-col ">
       <div className="flex h-full w-full overflow-hidden justify-between">
-        {/* Left Sidebar */}
         {showSidebar ? (
           <div className="w-64 bg-zinc-800 border-r border-gray-700 flex flex-col">
-            {/* Search Bar */}
             <div className="flex items-center space-x-2 ml-2 mt-2">
               <Button
                 variant="ghost"
@@ -113,13 +286,125 @@ export default function BrowserLayout() {
                   className="bg-zinc-700 border-gray-600 text-white placeholder-gray-400 h-8 "
                   placeholder="Enter URL..."
                 />
-                <Button className="bg-zinc-700 border-gray-600 text-white placeholder-gray-400 h-8 mt-3 w-full hover:bg-zinc-600">
-                  Share Session
-                </Button>
+                <Dialog>
+                  <form>
+                    <DialogTrigger asChild>
+                      <Button className="rounded-lg bg-zinc-700 w-full mt-2">
+                        Session
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                      <DialogHeader>
+                        <DialogTitle className="text-white">
+                          Session Settings
+                        </DialogTitle>
+                        <DialogDescription>
+                          Join or Create a Session
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Tabs defaultValue="join" className="w-full">
+                        <TabsList className="w-full bg-zinc-700">
+                          <TabsTrigger
+                            className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                            value="join"
+                          >
+                            Join
+                          </TabsTrigger>
+                          <TabsTrigger
+                            className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                            value="create"
+                          >
+                            Create
+                          </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="join">
+                          <Input
+                            onChange={(e) => {
+                              setSessionCode(e.target.value);
+                            }}
+                            placeholder="Enter Code"
+                            value={sessionCode}
+                            className="mb-2 mt-2 text-white "
+                          ></Input>
+                          <Input
+                            onChange={(e) => {
+                              setUsername(e.target.value);
+                            }}
+                            value={username}
+                            placeholder="Enter Username"
+                            className="mb-3 mt-2 text-white"
+                          ></Input>
+                          <Button
+                            onClick={() => {
+                              joinSession();
+                            }}
+                            className="w-full"
+                          >
+                            Enter Session
+                          </Button>
+                        </TabsContent>
+
+                        <TabsContent value="create">
+                          <Input
+                            onChange={(e) => {
+                              setSessionCode(e.target.value);
+                            }}
+                            value={sessionCode}
+                            placeholder="Create Code"
+                            className="mb-2 mt-2 text-white"
+                          ></Input>
+                          <Input
+                            onChange={(e) => {
+                              setUsername(username);
+                            }}
+                            value={username}
+                            placeholder="Enter Username"
+                            className="mb-3 mt-2 text-white"
+                          ></Input>
+                          <Button
+                            onClick={() => {
+                              createSession();
+                            }}
+                            className="w-full"
+                          >
+                            Create Session
+                          </Button>
+                        </TabsContent>
+                      </Tabs>
+                    </DialogContent>
+                  </form>
+                </Dialog>
               </div>
             </div>
 
-            <div className="flex-1 p-3">
+            <div className="px-3 mb-4">
+              <div className="grid grid-cols-4 gap-4 mt-3">
+                {savedTabs.map((tab, index) => (
+                  <Button
+                    onClick={() => {
+                      addNewTab(tab.url);
+                    }}
+                    key={index}
+                    variant="ghost"
+                    className="w-12 h-12 rounded-lg bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 p-0 flex items-center justify-center transition-colors"
+                  >
+                    {tab.favIcon ? (
+                      <img
+                        src={tab.favIcon || "/placeholder.svg"}
+                        className="w-7 h-7 rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 p-3 mt-5">
               <div className="mb-3 ">
                 <Button
                   onClick={() => {
@@ -144,13 +429,133 @@ export default function BrowserLayout() {
                         : "bg-zinc-700 border-none hover:bg-zinc-600 rounded-lg"
                     }`}
                   >
+                    {tab.favIcon && (
+                      <img
+                        src={tab.favIcon}
+                        alt="favicon"
+                        className="w-5 h-5 mr-2"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
+                      />
+                    )}
                     <div className="truncate flex-1 text-sm">
                       {tab.title || tab.url}
                     </div>
+                    <Button
+                      onClick={() => {
+                        closeTab(tab.id);
+                      }}
+                      className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
+                    >
+                      <X></X>
+                    </Button>
                   </button>
                 </div>
               ))}
             </div>
+
+            {shared ? (
+              <Dialog>
+                <form>
+                  <DialogTrigger asChild>
+                    <Button className="rounded-lg mb-3 ml-3">
+                      <MessageCircle></MessageCircle>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogTrigger asChild></DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px] left-3 top-[14%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">
+                        Session Chat
+                      </DialogTitle>
+                      <DialogDescription>
+                        Communicate with your fellas in Quick Browse
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <ScrollArea className="h-[600px]">
+                      {chatMessages.map((message, index) => {
+                        const isCurrentUser = message.username === username;
+                        return (
+                          <div
+                            key={index}
+                            className={`flex ${
+                              isCurrentUser ? "justify-end" : "justify-start"
+                            } mt-5 mb-5`}
+                          >
+                            <div className="flex gap-2 items-start">
+                              {!isCurrentUser && (
+                                <Avatar>
+                                  <AvatarFallback className="bg-zinc-700 text-white">
+                                    {message.username
+                                      ?.slice(0, 2)
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                              {isCurrentUser ? (
+                                <p className="text-white bg-zinc-500 rounded-lg p-3 max-w-[200px] break-words">
+                                  {message.message}
+                                </p>
+                              ) : (
+                                <p className="text-white bg-zinc-700 rounded-lg p-3 max-w-[200px] break-words">
+                                  {message.message}
+                                </p>
+                              )}
+                              {isCurrentUser && (
+                                <Avatar>
+                                  <AvatarFallback className="bg-zinc-700 text-white">
+                                    {username.slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </ScrollArea>
+                    <div className="flex justify-between gap-3">
+                      <Input
+                        value={messageInput}
+                        onChange={(e) => {
+                          setMessageInput(e.target.value);
+                        }}
+                        placeholder="Enter Chat Message"
+                        className="text-white"
+                      ></Input>
+                      <Button
+                        onClick={() => {
+                          sendChatMessage();
+                        }}
+                      >
+                        <ArrowBigRight></ArrowBigRight>
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </form>
+              </Dialog>
+            ) : null}
+            <Dialog>
+              <form>
+                <DialogTrigger asChild>
+                  <Button className="rounded-lg mb-3 ml-3">
+                    <Bolt></Bolt>
+                  </Button>
+                </DialogTrigger>
+                <DialogTrigger asChild></DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] left-3 top-[44%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      Debug Console
+                    </DialogTitle>
+                    <DialogDescription>
+                      View Cookies, Localstorage and Console
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </form>
+            </Dialog>
           </div>
         ) : null}
 
@@ -179,6 +584,9 @@ export default function BrowserLayout() {
                 className={`w-full min-h-screen ${
                   tab.id === activeTabId ? "flex" : "hidden"
                 }`}
+                partition="persist:QuickBrowse"
+                allowpopups={false}
+                webpreferences="contextIsolation,sandbox"
               />
             ))}
           </div>
