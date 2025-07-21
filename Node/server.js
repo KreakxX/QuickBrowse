@@ -109,7 +109,8 @@ function handleJoinSession(ws, message) {
     username: username,
     messages: sessions[sessionCode].messages,
     tabs: sessions[sessionCode].tabs,
-    nextId: sessions[sessionCode].nextId
+    nextId: sessions[sessionCode].nextId,
+    activeTabId: sessions[sessionCode].activeTabId
   }));
 
   
@@ -173,13 +174,16 @@ function addNewSharedTab(ws, message) {
   };
   
   sessions[sessionCode].tabs.push(newTab);
-
+  sessions[sessionCode].nextId = message.nextId;
+  sessions[sessionCode].activeTabId = message.activeTabId
   // Broadcast to other clients
   const browserTab = {
     type: 'browser_tab_new', 
     id: message.tab.id,
     url: message.tab.url,
-    favicon: message.tab.favIcon
+    favicon: message.tab.favIcon,
+    nextId: message.nextId,
+    activeTabId: message.activeTabId
   };
 
   broadcastToSession(sessionCode, browserTab, ws);
@@ -207,11 +211,16 @@ function removeSharedTab(ws, message){
   (tab) => tab.id !== newTab.id
   );  
 
+  sessions[sessionCode].nextId = message.nextId;
+  sessions[sessionCode].activeTabId = message.activeTabId
+
     const browserTab = {
     type: 'browser_tab_old', 
     id: message.tab.id,
     url: message.tab.url,
-    favicon: message.tab.favIcon
+    favicon: message.tab.favIcon,
+    nextId: message.nextId,
+    activeTabId: message.activeTabId
   };
   broadcastToSession(sessionCode,browserTab);
 }

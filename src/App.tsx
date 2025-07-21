@@ -139,10 +139,14 @@ export default function BrowserLayout() {
             favIcon: data.favicon,
           },
         ]);
+        setNextId(data.nextId);
+        setActiveTabId(data.activeTabId);
         break;
 
       case "browser_tab_old":
         setTabs((prev) => prev.filter((tab) => tab.id !== data.id));
+        setNextId(data.nextId);
+        setActiveTabId(data.activeTabId);
         break;
 
       case "session_joined":
@@ -150,6 +154,8 @@ export default function BrowserLayout() {
         setShared(true);
         setTabs(data.tabs);
         setChatMessages(data.messages || []);
+        setNextId(data.nextId);
+        setActiveTabId(data.activeTabId);
 
         break;
 
@@ -267,8 +273,9 @@ export default function BrowserLayout() {
     };
 
     setTabs([...tabs, newTab]);
-    setNextId(nextId + 1);
     setActiveTabId(nextId);
+    const newNextId = nextId + 1;
+    setNextId(newNextId);
     setUrl(url);
     setCurrentUrl(url);
 
@@ -286,6 +293,8 @@ export default function BrowserLayout() {
             JSON.stringify({
               type: "add_browser_tab",
               tab: newTab,
+              nextId: newNextId,
+              activeTabId: nextId,
             })
           )
         : null;
@@ -293,24 +302,39 @@ export default function BrowserLayout() {
   };
 
   const closeTab = (id: number) => {
-    setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== id));
+    const remainingTabs = tabs.filter((tab) => tab.id !== id);
+    setTabs(remainingTabs);
+
     const tabToDelete = tabs.find((tab) => tab.id === id);
+
+    if (id === activeTabId && remainingTabs.length > 0) {
+      const newActiveTab = remainingTabs[0];
+      setActiveTabId(newActiveTab.id);
+      setUrl(newActiveTab.url);
+      setCurrentUrl(newActiveTab.url);
+    }
+
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
       return;
     }
-    {
-      shared
-        ? wsRef.current.send(
-            JSON.stringify({
-              type: "remove_browser_tab",
-              tab: tabToDelete,
-            })
-          )
-        : null;
+
+    if (shared) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "remove_browser_tab",
+          tab: tabToDelete,
+          nextId: nextId,
+          activeTabId:
+            remainingTabs.length > 0
+              ? id === activeTabId
+                ? remainingTabs[0].id
+                : activeTabId
+              : -1, // Use -1 or 0 if no tabs remain
+        })
+      );
     }
   };
-
   const GetCookesForDebug = async () => {
     const partition = "persist:QuickBrowse";
     if (window.electronAPI?.getCookies) {
