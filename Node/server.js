@@ -34,6 +34,9 @@ wss.on('connection', (ws) => {
       case 'active_tab_id':
         handleChangeActiveTab(ws,message);
         break;
+      case 'mouse_move':
+        handleMouseMovementOfSession(ws,message);
+        break;
     }
   });
 
@@ -49,6 +52,26 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+function handleMouseMovementOfSession(ws, message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  } 
+  sessions[sessionCode].X = message.data.x
+  sessions[sessionCode].Y = message.data.y
+
+  const broadcastMessage = {
+    type: "mouse_update",     
+    x: message.data.x,
+    y: message.data.y
+  };
+  broadcastToSession(sessionCode, broadcastMessage,ws); 
+}
 
 
 function handleChangeActiveTab(ws, message){
@@ -71,9 +94,8 @@ function handleChangeActiveTab(ws, message){
     type: "activeTab_changed",      // but this is the correct way for sending to the clients
     activeTabId: message.activeTabId
   };
-  broadcastToSession(sessionCode, broadcastMessage,ws);
+  broadcastToSession(sessionCode, broadcastMessage,ws);  // the ws is neccessary because we only want to update to all the clients and not to broadcast it to our selfs
 }
-
 
 // Function for creating a Session
 function handleCreateSession(ws, message) {
@@ -95,7 +117,10 @@ function handleCreateSession(ws, message) {
     tabs: initialTabs, 
     nextId: message.nextId ,
     activeTabId: message.activeTabId,
-    useractiveTabId: message.activeTabId
+    useractiveTabId: message.activeTabId,
+    X: 0,
+    Y: 0
+    
   }; // generates a new Session with the code the clients and no messages
 
   ws.sessionCode = sessionCode;  // client belongs to this session the host in this case
@@ -139,8 +164,9 @@ function handleJoinSession(ws, message) {
     tabs: sessions[sessionCode].tabs,
     nextId: sessions[sessionCode].nextId,
     activeTabId: sessions[sessionCode].activeTabId,
-    useractiveTabId: message.activeTabId
-
+    useractiveTabId: message.activeTabId,
+    X: sessions[sessionCode].X || 0, 
+    Y: sessions[sessionCode].Y || 0
   }));
 
   

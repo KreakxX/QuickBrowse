@@ -60,7 +60,8 @@ export default function BrowserLayout() {
   const [sessionCode, setSessionCode] = useState<string>("");
 
   const [messageInput, setMessageInput] = useState<string>("");
-
+  const [xSession, setXSession] = useState<number>(0);
+  const [ySession, setYSession] = useState<number>(0);
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([
     { url: "https://youtube.com", favIcon: "https://youtube.com/favicon.ico" },
     { url: "https://github.com", favIcon: "https://github.com/favicon.ico" },
@@ -101,6 +102,7 @@ export default function BrowserLayout() {
         // connect to the websockket and update the ref
         const ws = new WebSocket("ws://localhost:8080");
         wsRef.current = ws;
+        getMouseMovement();
 
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
@@ -130,7 +132,10 @@ export default function BrowserLayout() {
         setSessionCode(data.code);
         setShared(true);
         break;
-
+      case "mouse_update":
+        setXSession(data.x);
+        setYSession(data.y);
+        break;
       case "activeTab_changed":
         setActiveTabIdSession(data.activeTabId);
 
@@ -161,6 +166,8 @@ export default function BrowserLayout() {
         setChatMessages(data.messages || []);
         setNextId(data.nextId);
         setActiveTabId(data.activeTabId);
+        setXSession(data.X);
+        setYSession(data.Y);
 
         break;
 
@@ -300,9 +307,7 @@ export default function BrowserLayout() {
       alert("Not connected to server");
       return;
     }
-
     // if (!messageInput.trim()) return;   // this caused the error
-
     // send the Message to the host, the websocket which gets also displayed than for all other clients
     {
       shared
@@ -358,6 +363,35 @@ export default function BrowserLayout() {
       const result = await window.electronAPI.getCookies(partition);
       setCookies(result);
     }
+  };
+
+  const getMouseMovement = () => {
+    let lastSent = 0;
+    const THROTTLE_MS = 35; // Send mouse updates every 50ms max
+
+    document.addEventListener("mousemove", (e) => {
+      const now = Date.now();
+
+      if (now - lastSent < THROTTLE_MS) {
+        return;
+      }
+      lastSent = now;
+
+      // Check WebSocket connection without showing alert
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        return; // Silently return instead of showing alert
+      }
+
+      wsRef.current.send(
+        JSON.stringify({
+          type: "mouse_move",
+          data: {
+            x: e.clientX,
+            y: e.clientY,
+          },
+        })
+      );
+    });
   };
 
   return (
@@ -537,14 +571,6 @@ export default function BrowserLayout() {
               </div>
 
               {tabs.map((tab) => {
-                // Bestimme ob dieser Tab der aktive Tab von einem anderen User ist
-                const isOtherUserActive =
-                  tab.id === activeTabIdSession &&
-                  tab.id !== activeTabId &&
-                  shared;
-
-                // Bestimme ob dieser Tab mein aktiver Tab ist
-                const isMyActiveTab = tab.id === activeTabId;
                 return (
                   <div key={tab.id} className="mb-2 relative group">
                     <button
@@ -708,6 +734,20 @@ export default function BrowserLayout() {
                 <ChevronLeft></ChevronLeft>
               )}
             </button> */}
+            <div
+              style={{
+                position: "absolute",
+                top: ySession,
+                left: xSession,
+                width: 16,
+                height: 16,
+                backgroundColor: "limegreen",
+                borderRadius: "50%",
+                pointerEvents: "none", // verhindert dass es klicks blockiert
+                transform: "translate(-50%, -50%)", // zentriert den Kreis
+                zIndex: 1000,
+              }}
+            />
 
             {tabs.map((tab) => (
               <webview
@@ -716,9 +756,10 @@ export default function BrowserLayout() {
                   webviewRefs.current[tab.id] = el;
                 }}
                 src={tab.id === activeTabId ? url : tab.url}
-                className={`w-full min-h-screen ${
+                className={`absolute top-0 left-0 w-full h-full z-10 ${
                   tab.id === activeTabId ? "flex" : "hidden"
                 }`}
+                style={{ pointerEvents: shared ? "none" : "auto" }}
                 partition="persist:QuickBrowse"
                 allowpopups={false}
                 webpreferences="contextIsolation,sandbox"
