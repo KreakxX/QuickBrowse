@@ -31,6 +31,9 @@ wss.on('connection', (ws) => {
       case 'remove_browser_tab':
         removeSharedTab(ws, message);
         break;
+      case 'active_tab_id':
+        handleChangeActiveTab(ws,message);
+        break;
     }
   });
 
@@ -46,6 +49,30 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+
+function handleChangeActiveTab(ws, message){
+   const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  } 
+  sessions[sessionCode].useractiveTabId = message.activeTabId
+
+  // ws.send(JSON.stringify({
+  //   type: "activeTab_changed",
+  //   activeTabId: sessions[sessionCode].useractiveTabId   // was error because i was sending it to myself
+  // }))
+
+  const broadcastMessage = {
+    type: "activeTab_changed",      // but this is the correct way for sending to the clients
+    activeTabId: message.activeTabId
+  };
+  broadcastToSession(sessionCode, broadcastMessage,ws);
+}
 
 
 // Function for creating a Session
@@ -67,7 +94,8 @@ function handleCreateSession(ws, message) {
     messages: [],
     tabs: initialTabs, 
     nextId: message.nextId ,
-    activeTabId: message.activeTabId
+    activeTabId: message.activeTabId,
+    useractiveTabId: message.activeTabId
   }; // generates a new Session with the code the clients and no messages
 
   ws.sessionCode = sessionCode;  // client belongs to this session the host in this case
@@ -110,7 +138,9 @@ function handleJoinSession(ws, message) {
     messages: sessions[sessionCode].messages,
     tabs: sessions[sessionCode].tabs,
     nextId: sessions[sessionCode].nextId,
-    activeTabId: sessions[sessionCode].activeTabId
+    activeTabId: sessions[sessionCode].activeTabId,
+    useractiveTabId: message.activeTabId
+
   }));
 
   

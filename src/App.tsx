@@ -44,6 +44,7 @@ export default function BrowserLayout() {
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
   const [activeTabId, setActiveTabId] = useState<number>(0);
+  const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
   const [shared, setShared] = useState<boolean>(true);
   const [username, setUsername] = useState<string>("KreakxX");
   const [cookes, setCookies] = useState<any[]>([]);
@@ -130,6 +131,10 @@ export default function BrowserLayout() {
         setShared(true);
         break;
 
+      case "activeTab_changed":
+        setActiveTabIdSession(data.activeTabId);
+
+        break;
       case "browser_tab_new":
         setTabs((prev) => [
           ...prev,
@@ -202,6 +207,7 @@ export default function BrowserLayout() {
         type: "join_session",
         code: sessionCode,
         username: username,
+        activeTabId: activeTabId,
       })
     );
   };
@@ -247,6 +253,17 @@ export default function BrowserLayout() {
       setUrl(tab.url);
       setCurrentUrl(tab.url);
     }
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+    console.log("sending");
+    wsRef.current.send(
+      JSON.stringify({
+        type: "active_tab_id",
+        activeTabId: tabId,
+      })
+    );
   };
 
   const navigateBack = () => {
@@ -519,40 +536,53 @@ export default function BrowserLayout() {
                 </Button>
               </div>
 
-              {tabs.map((tab) => (
-                <div key={tab.id} className="mb-2 relative group">
-                  <button
-                    onClick={() => switchToTab(tab.id)}
-                    className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded ${
-                      tab.id === activeTabId
-                        ? "bg-zinc-600 border border-blue-500 rounded-lg"
-                        : "bg-zinc-700 border-none hover:bg-zinc-600 rounded-lg"
-                    }`}
-                  >
-                    {tab.favIcon && (
-                      <img
-                        src={tab.favIcon}
-                        alt="favicon"
-                        className="w-5 h-5 mr-2"
-                        onError={(e) =>
-                          (e.currentTarget.style.display = "none")
-                        }
-                      />
-                    )}
-                    <div className="truncate flex-1 text-sm">
-                      {tab.title || tab.url}
-                    </div>
-                    <Button
-                      onClick={() => {
-                        closeTab(tab.id);
-                      }}
-                      className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
+              {tabs.map((tab) => {
+                // Bestimme ob dieser Tab der aktive Tab von einem anderen User ist
+                const isOtherUserActive =
+                  tab.id === activeTabIdSession &&
+                  tab.id !== activeTabId &&
+                  shared;
+
+                // Bestimme ob dieser Tab mein aktiver Tab ist
+                const isMyActiveTab = tab.id === activeTabId;
+                return (
+                  <div key={tab.id} className="mb-2 relative group">
+                    <button
+                      onClick={() => switchToTab(tab.id)}
+                      className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded 
+  ${
+    tab.id === activeTabIdSession && shared
+      ? "bg-zinc-600 border border-green-500"
+      : tab.id === activeTabId
+      ? "bg-zinc-600 border border-blue-500"
+      : "bg-zinc-700 border-none hover:bg-zinc-600"
+  } rounded-lg`}
                     >
-                      <X></X>
-                    </Button>
-                  </button>
-                </div>
-              ))}
+                      {tab.favIcon && (
+                        <img
+                          src={tab.favIcon}
+                          alt="favicon"
+                          className="w-5 h-5 mr-2"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                      )}
+                      <div className="truncate flex-1 text-sm">
+                        {tab.title || tab.url}
+                      </div>
+                      <Button
+                        onClick={() => {
+                          closeTab(tab.id);
+                        }}
+                        className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
+                      >
+                        <X></X>
+                      </Button>
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {shared ? (
@@ -564,7 +594,7 @@ export default function BrowserLayout() {
                     </Button>
                   </DialogTrigger>
                   <DialogTrigger asChild></DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] left-3 top-[14%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                  <DialogContent className="sm:max-w-[425px] left-3 top-[44%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
                     <DialogHeader>
                       <DialogTitle className="text-white">
                         Session Chat
@@ -653,7 +683,9 @@ export default function BrowserLayout() {
                       Debug Console
                     </DialogTitle>
                     <DialogDescription>
-                      <pre>{JSON.stringify(cookes, null, 2)}</pre>
+                      <pre className="max-w-[300px] w-[200px] overflow-auto whitespace-pre-wrap break-words">
+                        {JSON.stringify(cookes, null, 2)}
+                      </pre>
                     </DialogDescription>
                   </DialogHeader>
                 </DialogContent>
