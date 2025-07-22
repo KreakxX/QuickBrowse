@@ -377,9 +377,8 @@ export default function BrowserLayout() {
       }
       lastSent = now;
 
-      // Check WebSocket connection without showing alert
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        return; // Silently return instead of showing alert
+        return;
       }
 
       wsRef.current.send(
@@ -734,24 +733,25 @@ export default function BrowserLayout() {
                 <ChevronLeft></ChevronLeft>
               )}
             </button> */}
-            <div
-              style={{
-                position: "absolute",
-                top: ySession,
-                left: xSession,
-                width: 16,
-                height: 16,
-                backgroundColor: "limegreen",
-                borderRadius: "50%",
-                pointerEvents: "none", // verhindert dass es klicks blockiert
-                transform: "translate(-50%, -50%)", // zentriert den Kreis
-                zIndex: 1000,
-              }}
-            />
+            {activeTabId === activeTabIdSession ? (
+              <div
+                style={{
+                  position: "absolute",
+                  top: ySession,
+                  left: xSession,
+                  width: 16,
+                  height: 16,
+                  backgroundColor: "limegreen",
+                  borderRadius: "50%",
+                  pointerEvents: "none", // verhindert dass es klicks blockiert
+                  transform: "translate(-50%, -50%)", // zentriert den Kreis
+                  zIndex: 1000,
+                }}
+              />
+            ) : null}
 
             {tabs.map((tab) => (
               <webview
-                key={tab.id}
                 ref={(el) => {
                   webviewRefs.current[tab.id] = el;
                 }}
@@ -759,7 +759,6 @@ export default function BrowserLayout() {
                 className={`absolute top-0 left-0 w-full h-full z-10 ${
                   tab.id === activeTabId ? "flex" : "hidden"
                 }`}
-                style={{ pointerEvents: shared ? "none" : "auto" }}
                 partition="persist:QuickBrowse"
                 allowpopups={false}
                 webpreferences="contextIsolation,sandbox"
