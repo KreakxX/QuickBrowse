@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { act, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,6 +10,8 @@ import {
   ArrowBigLeft,
   ArrowBigRight,
   Bolt,
+  Link,
+  MousePointer2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,7 @@ export default function BrowserLayout() {
   const [shared, setShared] = useState<boolean>(true);
   const [username, setUsername] = useState<string>("KreakxX");
   const [cookes, setCookies] = useState<any[]>([]);
+  const [shareCursor, setShareCursor] = useState<boolean>(false);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -125,6 +128,95 @@ export default function BrowserLayout() {
     };
   }, []);
 
+  // gucken was man alles easy sharen kann
+  useEffect(() => {
+    const handleWebViewEvents = () => {
+      const activeWebView = webviewRefs.current[activeTabId];
+      if (!activeWebView) return;
+
+      const handleNavigate = (event: any) => {
+        const newUrl = event.url;
+
+        setCurrentUrl(newUrl);
+        setUrl(newUrl);
+        setTabs((prev) =>
+          prev.map((tab) =>
+            tab.id === activeTabId
+              ? {
+                  ...tab,
+                  url: newUrl,
+                  favIcon: new URL(newUrl).origin + "/favicon.ico",
+                }
+              : tab
+          )
+        );
+
+        if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: "url_changed",
+              tabId: activeTabId,
+              newUrl: newUrl,
+              favicon: new URL(newUrl).origin + "/favicon.ico",
+            })
+          );
+        }
+      };
+
+      // const handleInPageNavigate = (event: any) => {
+      //   const newUrl = event.url;
+      //   if (newUrl.includes("/auth") || newUrl.includes("/login")) {
+      //     return;
+      //   }
+
+      //   setCurrentUrl(newUrl);
+      //   setUrl(newUrl);
+      //   setTabs((prev) =>
+      //     prev.map((tab) =>
+      //       tab.id === activeTabId
+      //         ? {
+      //             ...tab,
+      //             url: newUrl,
+      //             favIcon: new URL(newUrl).origin + "/favicon.ico",
+      //           }
+      //         : tab
+      //     )
+      //   );
+
+      //   if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
+      //     wsRef.current.send(
+      //       JSON.stringify({
+      //         type: "url_changed",
+      //         tabId: activeTabId,
+      //         newUrl: newUrl,
+      //         favicon: new URL(newUrl).origin + "/favicon.ico",
+      //       })
+      //     );
+      //   }
+      // };
+
+      activeWebView.addEventListener("did-navigate", handleNavigate);
+      // activeWebView.addEventListener(
+      //   "did-navigate-in-page",
+      //   handleInPageNavigate
+      // );
+
+      // Cleanup function to remove event listeners
+      return () => {
+        activeWebView.removeEventListener("did-navigate", handleNavigate);
+        // activeWebView.removeEventListener(
+        //   "did-navigate-in-page",
+        //   handleInPageNavigate
+        // );
+      };
+    };
+
+    const cleanup = handleWebViewEvents();
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [activeTabId]);
+
   // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
@@ -136,6 +228,24 @@ export default function BrowserLayout() {
         setXSession(data.x);
         setYSession(data.y);
         break;
+      case "url_changed":
+        setTabs((prev) =>
+          prev.map((tab) =>
+            tab.id === data.tab.id
+              ? {
+                  ...tab,
+                  url: data.tab.url,
+                  favIcon: new URL(data.tab.url).origin + "/favicon.ico",
+                }
+              : tab
+          )
+        );
+        // if (data.tab.id == activeTabId) {
+        //   setCurrentUrl(data.tab.url);
+        //   setUrl(data.tab.url);
+        // }
+        break;
+
       case "activeTab_changed":
         setActiveTabIdSession(data.activeTabId);
 
@@ -150,7 +260,7 @@ export default function BrowserLayout() {
           },
         ]);
         setNextId(data.nextId);
-        setActiveTabId(data.activeTabId);
+        setActiveTabIdSession(data.activeTabId);
         break;
 
       case "browser_tab_old":
@@ -272,7 +382,6 @@ export default function BrowserLayout() {
       })
     );
   };
-
   const navigateBack = () => {
     const activeWebview = webviewRefs.current[activeTabId] as any;
     activeWebview?.goBack();
@@ -326,15 +435,7 @@ export default function BrowserLayout() {
   const closeTab = (id: number) => {
     const remainingTabs = tabs.filter((tab) => tab.id !== id);
     setTabs(remainingTabs);
-
     const tabToDelete = tabs.find((tab) => tab.id === id);
-
-    if (id === activeTabId && remainingTabs.length > 0) {
-      const newActiveTab = remainingTabs[0];
-      setActiveTabId(newActiveTab.id);
-      setUrl(newActiveTab.url);
-      setCurrentUrl(newActiveTab.url);
-    }
 
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -347,12 +448,7 @@ export default function BrowserLayout() {
           type: "remove_browser_tab",
           tab: tabToDelete,
           nextId: nextId,
-          activeTabId:
-            remainingTabs.length > 0
-              ? id === activeTabId
-                ? remainingTabs[0].id
-                : activeTabId
-              : -1, // Use -1 or 0 if no tabs remain
+          activeTabId: remainingTabs.length > 0 ? activeTabId - 1 : 0,
         })
       );
     }
@@ -439,91 +535,111 @@ export default function BrowserLayout() {
                   className="bg-zinc-700 border-gray-600 text-white placeholder-gray-400 h-8 "
                   placeholder="Enter URL..."
                 />
-                <Dialog>
-                  <form>
-                    <DialogTrigger asChild>
-                      <Button className="rounded-lg bg-zinc-700 w-full mt-2">
-                        Session
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0 bg-zinc-800 border-none">
-                      <DialogHeader>
-                        <DialogTitle className="text-white">
-                          Session Settings
-                        </DialogTitle>
-                        <DialogDescription>
-                          Join or Create a Session
-                        </DialogDescription>
-                      </DialogHeader>
-                      <Tabs defaultValue="join" className="w-full">
-                        <TabsList className="w-full bg-zinc-700">
-                          <TabsTrigger
-                            className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
-                            value="join"
-                          >
-                            Join
-                          </TabsTrigger>
-                          <TabsTrigger
-                            className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
-                            value="create"
-                          >
-                            Create
-                          </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="join">
-                          <Input
-                            onChange={(e) => {
-                              setSessionCode(e.target.value);
-                            }}
-                            placeholder="Enter Code"
-                            value={sessionCode}
-                            className="mb-2 mt-2 text-white "
-                          ></Input>
-                          <Input
-                            onChange={(e) => {
-                              setUsername(e.target.value);
-                            }}
-                            value={username}
-                            placeholder="Enter Username"
-                            className="mb-3 mt-2 text-white"
-                          ></Input>
-                          <Button
-                            onClick={() => {
-                              joinSession();
-                            }}
-                            className="w-full"
-                          >
-                            Enter Session
-                          </Button>
-                        </TabsContent>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    className={` w-1/2 rounded-lg  mt-2 ${
+                      shareCursor
+                        ? "bg-green-600 hover:bg-green-600"
+                        : "bg-zinc-700 hover:bg-zinc-700"
+                    }`}
+                    onClick={() => {
+                      setShareCursor(!shareCursor);
+                    }}
+                  >
+                    <MousePointer2></MousePointer2>
+                  </Button>
+                  <Dialog>
+                    <form className="w-1/2">
+                      <DialogTrigger asChild>
+                        <Button
+                          className={`rounded-lg  w-full mt-2 ${
+                            shared
+                              ? "bg-green-600 hover:bg-green-600"
+                              : "bg-zinc-700 hover:bg-zinc-700"
+                          }`}
+                        >
+                          <Link></Link>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                        <DialogHeader>
+                          <DialogTitle className="text-white">
+                            Session Settings
+                          </DialogTitle>
+                          <DialogDescription>
+                            Join or Create a Session
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Tabs defaultValue="join" className="w-full">
+                          <TabsList className="w-full bg-zinc-700">
+                            <TabsTrigger
+                              className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                              value="join"
+                            >
+                              Join
+                            </TabsTrigger>
+                            <TabsTrigger
+                              className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                              value="create"
+                            >
+                              Create
+                            </TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="join">
+                            <Input
+                              onChange={(e) => {
+                                setSessionCode(e.target.value);
+                              }}
+                              placeholder="Enter Code"
+                              value={sessionCode}
+                              className="mb-2 mt-2 text-white "
+                            ></Input>
+                            <Input
+                              onChange={(e) => {
+                                setUsername(e.target.value);
+                              }}
+                              value={username}
+                              placeholder="Enter Username"
+                              className="mb-3 mt-2 text-white"
+                            ></Input>
+                            <Button
+                              onClick={() => {
+                                joinSession();
+                              }}
+                              className="w-full"
+                            >
+                              Enter Session
+                            </Button>
+                          </TabsContent>
 
-                        <TabsContent value="create">
-                          <Input
-                            value={sessionCode}
-                            placeholder="Create Code"
-                            className="mb-2 mt-2 text-white"
-                          ></Input>
-                          <Input
-                            onChange={(e) => {
-                              setUsername(e.target.value);
-                            }}
-                            value={username}
-                            placeholder="Enter Username"
-                            className="mb-3 mt-2 text-white"
-                          ></Input>
-                          <Button
-                            onClick={() => {
-                              createSession();
-                            }}
-                            className="w-full"
-                          >
-                            Create Session
-                          </Button>
-                        </TabsContent>
-                      </Tabs>
-                    </DialogContent>
-                  </form>
-                </Dialog>
+                          <TabsContent value="create">
+                            <Input
+                              value={sessionCode}
+                              placeholder="Create Code"
+                              className="mb-2 mt-2 text-white"
+                            ></Input>
+                            <Input
+                              onChange={(e) => {
+                                setUsername(e.target.value);
+                              }}
+                              value={username}
+                              placeholder="Enter Username"
+                              className="mb-3 mt-2 text-white"
+                            ></Input>
+                            <Button
+                              onClick={() => {
+                                createSession();
+                              }}
+                              className="w-full"
+                            >
+                              Create Session
+                            </Button>
+                          </TabsContent>
+                        </Tabs>
+                      </DialogContent>
+                    </form>
+                  </Dialog>{" "}
+                </div>
               </div>
             </div>
 
@@ -733,7 +849,7 @@ export default function BrowserLayout() {
                 <ChevronLeft></ChevronLeft>
               )}
             </button> */}
-            {activeTabId === activeTabIdSession ? (
+            {activeTabId === activeTabIdSession && shared ? (
               <div
                 style={{
                   position: "absolute",
@@ -743,8 +859,8 @@ export default function BrowserLayout() {
                   height: 16,
                   backgroundColor: "limegreen",
                   borderRadius: "50%",
-                  pointerEvents: "none", // verhindert dass es klicks blockiert
-                  transform: "translate(-50%, -50%)", // zentriert den Kreis
+                  pointerEvents: "none",
+                  transform: "translate(-50%, -50%)",
                   zIndex: 1000,
                 }}
               />
@@ -761,6 +877,9 @@ export default function BrowserLayout() {
                 }`}
                 partition="persist:QuickBrowse"
                 allowpopups={false}
+                style={{
+                  pointerEvents: shareCursor ? "none" : "auto",
+                }}
                 webpreferences="contextIsolation,sandbox"
               />
             ))}

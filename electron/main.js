@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
-import { ipcMain, session } from 'electron';
+import { ipcMain } from 'electron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +33,8 @@ ipcMain.handle('get-cookies', async (event, partition) => {
   const cookies = await ses.cookies.get({});
   return cookies;
 });
+
+
 
 app.whenReady().then(createWindow);
 

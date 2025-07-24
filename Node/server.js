@@ -37,6 +37,9 @@ wss.on('connection', (ws) => {
       case 'mouse_move':
         handleMouseMovementOfSession(ws,message);
         break;
+      case 'url_changed':
+        ChangeSharedUrl(ws,message);
+        break;
     }
   });
 
@@ -211,6 +214,34 @@ function broadcastToSession(sessionCode, message, excludeClient = null) {
   });
 }
 
+function ChangeSharedUrl(ws, message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  }
+
+  const tabID = message.tabId;
+  const newUrl = message.newUrl;
+  const favIcon = message.favIcon;
+
+  const tab = sessions[sessionCode].tabs.find((tab)=>tab.id ==tabID );
+
+  tab.url = newUrl;
+  tab.favIcon = favIcon;
+
+  const typeMessage = {
+    tab: tab,
+    type: "url_changed"
+  }
+
+  broadcastToSession(sessionCode, typeMessage, ws);
+
+}
+
 // here we add the message in the frontend
 function addNewSharedTab(ws, message) {
   const sessionCode = ws.sessionCode;
@@ -278,7 +309,7 @@ function removeSharedTab(ws, message){
     nextId: message.nextId,
     activeTabId: message.activeTabId
   };
-  broadcastToSession(sessionCode,browserTab);
+  broadcastToSession(sessionCode,browserTab,ws);
 }
 
 // add the listening in the frontend
