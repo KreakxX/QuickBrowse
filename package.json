@@ -13,12 +13,19 @@
     "dist": "electron-builder"
 
   },
-   "build": {
-    "appId": "com.mycompany.myapp",
-    "productName": "MyElectronApp",
-    "win": {
-      "target": "nsis"
-    }},
+  "build": {
+  "appId": "com.mycompany.myapp",
+  "productName": "MyElectronApp",
+  "files": [
+    "electron/**/*",
+    "dist/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": "nsis"
+  }
+},
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -57,8 +64,8 @@
     "vite": "^7.0.4"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "main.js",
-  "repository": {
+  "main": "electron/main.js",
+    "repository": {
     "type": "git",
     "url": "git+https://github.com/KreakxX/QuickBrowse.git"
   },

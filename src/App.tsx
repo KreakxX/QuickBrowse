@@ -136,6 +136,7 @@ export default function BrowserLayout() {
       if (!activeWebView) return;
 
       const handleNavigate = (event: any) => {
+        console.log("Navigation detected:", event.url); // Add this line
         const newUrl = event.url;
 
         setCurrentUrl(newUrl);
@@ -152,7 +153,8 @@ export default function BrowserLayout() {
           )
         );
 
-        if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
+        if (shared && shared && wsRef.current?.readyState === WebSocket.OPEN) {
+          console.log("Sending URL change to server:", newUrl); // Add this line
           wsRef.current.send(
             JSON.stringify({
               type: "url_changed",
@@ -206,10 +208,10 @@ export default function BrowserLayout() {
               : tab
           )
         );
-        // if (data.tab.id == activeTabId) {
-        //   setCurrentUrl(data.tab.url);
-        //   setUrl(data.tab.url);
-        // }
+        if (data.tab.id === activeTabIdSession && data.tab.id === activeTabId) {
+          setCurrentUrl(data.tab.url);
+          setUrl(data.tab.url);
+        }
         break;
 
       case "activeTab_changed":
@@ -420,17 +422,10 @@ export default function BrowserLayout() {
       );
     }
   };
-  const GetCookesForDebug = async () => {
-    const partition = "persist:QuickBrowse";
-    if (window.electronAPI?.getCookies) {
-      const result = await window.electronAPI.getCookies(partition);
-      setCookies(result);
-    }
-  };
 
   const getMouseMovement = () => {
     let lastSent = 0;
-    const THROTTLE_MS = 35; // Send mouse updates every 50ms max
+    const THROTTLE_MS = 35;
 
     document.addEventListener("mousemove", (e) => {
       const now = Date.now();
@@ -444,15 +439,34 @@ export default function BrowserLayout() {
         return;
       }
 
-      wsRef.current.send(
-        JSON.stringify({
-          type: "mouse_move",
-          data: {
-            x: e.clientX,
-            y: e.clientY,
-          },
-        })
+      const webviewContainer = document.querySelector(
+        ".flex-1.bg-zinc-900.relative"
       );
+      if (webviewContainer) {
+        const rect = webviewContainer.getBoundingClientRect();
+
+        // calculate and use relative px
+        const relativeX = e.clientX - rect.left;
+        const relativeY = e.clientY - rect.top;
+
+        // boundary checks
+        if (
+          relativeX >= 0 &&
+          relativeY >= 0 &&
+          relativeX <= rect.width &&
+          relativeY <= rect.height
+        ) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: "mouse_move",
+              data: {
+                x: relativeX,
+                y: relativeY,
+              },
+            })
+          );
+        }
+      }
     });
   };
 
@@ -805,7 +819,7 @@ export default function BrowserLayout() {
                   height: 25,
                   borderRadius: "50%",
                   pointerEvents: "none",
-                  transform: "translate(-50%, -50%)",
+                  transform: "translate(-12.5px, -12.5px)",
                   zIndex: 1000,
                 }}
               />

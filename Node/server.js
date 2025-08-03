@@ -248,15 +248,19 @@ function ChangeSharedUrl(ws, message){
   const newUrl = message.newUrl;
   const favIcon = message.favIcon;
 
-  const tab = sessions[sessionCode].tabs.find((tab)=>tab.id ==tabID );
+  const tabIndex = sessions[sessionCode].tabs.findIndex((tab) => tab.id == tabID);
 
-  tab.url = newUrl;
-  tab.favIcon = favIcon;
+  sessions[sessionCode].tabs[tabIndex].url = newUrl;
+  sessions[sessionCode].tabs[tabIndex].favIcon = favIcon;
 
   const typeMessage = {
-    tab: tab,
-    type: "url_changed"
-  }
+    type: "url_changed",
+    tab: {
+      id: sessions[sessionCode].tabs[tabIndex].id,
+      url: sessions[sessionCode].tabs[tabIndex].url,
+      favIcon: sessions[sessionCode].tabs[tabIndex].favIcon
+    }
+  };
 
   broadcastToSession(sessionCode, typeMessage, ws);
 
