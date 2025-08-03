@@ -9,8 +9,16 @@
     "lint": "eslint .",
     "electron": "electron electron/main.js",
     "preview": "vite preview",
-    "start": "concurrently \"npm run dev\" \"npm run electron\""
+    "start": "concurrently \"npm run dev\" \"npm run electron\"",
+    "dist": "electron-builder"
+
   },
+   "build": {
+    "appId": "com.mycompany.myapp",
+    "productName": "MyElectronApp",
+    "win": {
+      "target": "nsis"
+    }},
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -25,17 +33,20 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwind-merge": "^3.3.1",
+    "tailwind-scrollbar-hide": "^4.0.0",
     "tailwindcss": "^4.1.11",
     "ws": "^8.18.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/electron": "^1.4.38",
     "@types/node": "^24.0.15",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "concurrently": "^9.2.0",
     "electron": "^37.2.3",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
@@ -46,7 +57,7 @@
     "vite": "^7.0.4"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
-  "main": "eslint.config.js",
+  "main": "main.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/KreakxX/QuickBrowse.git"

@@ -12,6 +12,7 @@ import {
   Bolt,
   Link,
   MousePointer2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,51 +164,16 @@ export default function BrowserLayout() {
         }
       };
 
-      // const handleInPageNavigate = (event: any) => {
-      //   const newUrl = event.url;
-      //   if (newUrl.includes("/auth") || newUrl.includes("/login")) {
-      //     return;
-      //   }
-
-      //   setCurrentUrl(newUrl);
-      //   setUrl(newUrl);
-      //   setTabs((prev) =>
-      //     prev.map((tab) =>
-      //       tab.id === activeTabId
-      //         ? {
-      //             ...tab,
-      //             url: newUrl,
-      //             favIcon: new URL(newUrl).origin + "/favicon.ico",
-      //           }
-      //         : tab
-      //     )
-      //   );
-
-      //   if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
-      //     wsRef.current.send(
-      //       JSON.stringify({
-      //         type: "url_changed",
-      //         tabId: activeTabId,
-      //         newUrl: newUrl,
-      //         favicon: new URL(newUrl).origin + "/favicon.ico",
-      //       })
-      //     );
-      //   }
-      // };
-
       activeWebView.addEventListener("did-navigate", handleNavigate);
-      // activeWebView.addEventListener(
-      //   "did-navigate-in-page",
-      //   handleInPageNavigate
-      // );
+      activeWebView.addEventListener("did-navigate-in-page", handleNavigate);
 
       // Cleanup function to remove event listeners
       return () => {
         activeWebView.removeEventListener("did-navigate", handleNavigate);
-        // activeWebView.removeEventListener(
-        //   "did-navigate-in-page",
-        //   handleInPageNavigate
-        // );
+        activeWebView.removeEventListener(
+          "did-navigate-in-page",
+          handleNavigate
+        );
       };
     };
 
@@ -392,6 +358,7 @@ export default function BrowserLayout() {
     activeWebview?.goForward();
   };
 
+  // also via websockets so everything happends
   const refresh = () => {
     const activeWebview = webviewRefs.current[activeTabId] as any;
     activeWebview?.reload();
@@ -652,7 +619,7 @@ export default function BrowserLayout() {
                     }}
                     key={index}
                     variant="ghost"
-                    className="w-12 h-12 rounded-lg bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 p-0 flex items-center justify-center transition-colors"
+                    className={`w-12 h-12 rounded-lg bg-zinc-700 hover:bg-zinc-600  p-0 flex items-center justify-center transition-colors`}
                   >
                     {tab.favIcon ? (
                       <img
@@ -670,7 +637,7 @@ export default function BrowserLayout() {
               </div>
             </div>
 
-            <div className="flex-1 p-3 mt-5">
+            <div className="flex-1 p-3 mt-5 ">
               <div className="mb-3 ">
                 <Button
                   onClick={() => {
@@ -685,12 +652,13 @@ export default function BrowserLayout() {
                 </Button>
               </div>
 
-              {tabs.map((tab) => {
-                return (
-                  <div key={tab.id} className="mb-2 relative group">
-                    <button
-                      onClick={() => switchToTab(tab.id)}
-                      className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded 
+              <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
+                {tabs.map((tab) => {
+                  return (
+                    <div key={tab.id} className="mb-2  relative group">
+                      <button
+                        onClick={() => switchToTab(tab.id)}
+                        className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded 
   ${
     tab.id === activeTabIdSession && shared
       ? "bg-zinc-600 border border-green-500"
@@ -698,32 +666,33 @@ export default function BrowserLayout() {
       ? "bg-zinc-600 border border-blue-500"
       : "bg-zinc-700 border-none hover:bg-zinc-600"
   } rounded-lg`}
-                    >
-                      {tab.favIcon && (
-                        <img
-                          src={tab.favIcon}
-                          alt="favicon"
-                          className="w-5 h-5 mr-2"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
-                      )}
-                      <div className="truncate flex-1 text-sm">
-                        {tab.title || tab.url}
-                      </div>
-                      <Button
-                        onClick={() => {
-                          closeTab(tab.id);
-                        }}
-                        className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
                       >
-                        <X></X>
-                      </Button>
-                    </button>
-                  </div>
-                );
-              })}
+                        {tab.favIcon && (
+                          <img
+                            src={tab.favIcon}
+                            alt="favicon"
+                            className="w-5 h-5 mr-2"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        )}
+                        <div className="truncate flex-1 text-sm">
+                          {tab.title || tab.url}
+                        </div>
+                        <Button
+                          onClick={() => {
+                            closeTab(tab.id);
+                          }}
+                          className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
+                        >
+                          <X></X>
+                        </Button>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {shared ? (
@@ -807,31 +776,6 @@ export default function BrowserLayout() {
                 </form>
               </Dialog>
             ) : null}
-            <Dialog>
-              <form>
-                <DialogTrigger asChild>
-                  <Button
-                    className="rounded-lg mb-3 ml-3"
-                    onClick={GetCookesForDebug}
-                  >
-                    <Bolt></Bolt>
-                  </Button>
-                </DialogTrigger>
-                <DialogTrigger asChild></DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] left-3 top-[44%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">
-                      Debug Console
-                    </DialogTitle>
-                    <DialogDescription>
-                      <pre className="max-w-[300px] w-[200px] overflow-auto whitespace-pre-wrap break-words">
-                        {JSON.stringify(cookes, null, 2)}
-                      </pre>
-                    </DialogDescription>
-                  </DialogHeader>
-                </DialogContent>
-              </form>
-            </Dialog>
           </div>
         ) : null}
 
@@ -850,14 +794,15 @@ export default function BrowserLayout() {
               )}
             </button> */}
             {activeTabId === activeTabIdSession && shared ? (
-              <div
+              <MousePointer2
+                color="limegreen"
+                fill="limegreen"
                 style={{
                   position: "absolute",
                   top: ySession,
                   left: xSession,
-                  width: 16,
-                  height: 16,
-                  backgroundColor: "limegreen",
+                  width: 25,
+                  height: 25,
                   borderRadius: "50%",
                   pointerEvents: "none",
                   transform: "translate(-50%, -50%)",

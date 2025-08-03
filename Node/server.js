@@ -40,6 +40,9 @@ wss.on('connection', (ws) => {
       case 'url_changed':
         ChangeSharedUrl(ws,message);
         break;
+      case 'cursor_changed':
+        ShareCursor(ws,message);
+        break;
     }
   });
 
@@ -55,6 +58,23 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+
+function ShareCursor(ws, message){
+    const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  } 
+  const SharedCursorMessage = {
+    type: "cursor_changed",
+    cursorEnabled: message.cursorEnabled
+  }
+  broadcastToSession(sessionCode,SharedCursorMessage,ws)
+}
 
 function handleMouseMovementOfSession(ws, message){
   const sessionCode = ws.sessionCode;
