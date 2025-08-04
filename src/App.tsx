@@ -50,7 +50,6 @@ export default function BrowserLayout() {
   const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
   const [shared, setShared] = useState<boolean>(true);
   const [username, setUsername] = useState<string>("KreakxX");
-  const [cookes, setCookies] = useState<any[]>([]);
   const [shareCursor, setShareCursor] = useState<boolean>(false);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -76,7 +75,7 @@ export default function BrowserLayout() {
     { url: "https://web.de", favIcon: "https://web.de/favicon.ico" },
     { url: "https://canva.com", favIcon: "https://canva.com/favicon.ico" },
   ]);
-
+  const activeTabIdRef = useRef(activeTabId);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
     url: string;
@@ -98,6 +97,10 @@ export default function BrowserLayout() {
       favIcon: "https://google.com/favicon.ico",
     },
   ]);
+
+  useEffect(() => {
+    activeTabIdRef.current = activeTabId;
+  }, [activeTabId]);
 
   // just connection useEffect
   useEffect(() => {
@@ -153,8 +156,7 @@ export default function BrowserLayout() {
           )
         );
 
-        if (shared && shared && wsRef.current?.readyState === WebSocket.OPEN) {
-          console.log("Sending URL change to server:", newUrl); // Add this line
+        if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(
             JSON.stringify({
               type: "url_changed",
@@ -183,7 +185,7 @@ export default function BrowserLayout() {
     return () => {
       if (cleanup) cleanup();
     };
-  }, [activeTabId]);
+  }, [activeTabId, shared]);
 
   // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
@@ -208,15 +210,26 @@ export default function BrowserLayout() {
               : tab
           )
         );
-        if (data.tab.id === activeTabIdSession && data.tab.id === activeTabId) {
+        // problem is activeTabId and SessionId wont update correctly when adding a new Tab and switching to it
+        // it needs to be checking the locally thing
+        if (data.tab.id === activeTabIdRef.current) {
+          // wont change
           setCurrentUrl(data.tab.url);
           setUrl(data.tab.url);
+          const webview = webviewRefs.current[data.tab.id] as any;
+          if (webview && webview.src !== data.tab.url) {
+            console.log("Navigating webview to:", data.tab.url);
+            webview.src = data.tab.url;
+          }
+        } else {
+          console.log(data.tab.id);
+          console.log(activeTabId);
+          console.log(activeTabIdSession);
         }
         break;
 
       case "activeTab_changed":
         setActiveTabIdSession(data.activeTabId);
-
         break;
       case "browser_tab_new":
         setTabs((prev) => [
@@ -234,7 +247,7 @@ export default function BrowserLayout() {
       case "browser_tab_old":
         setTabs((prev) => prev.filter((tab) => tab.id !== data.id));
         setNextId(data.nextId);
-        setActiveTabId(data.activeTabId);
+        setActiveTabIdSession(data.activeTabId);
         break;
 
       case "session_joined":
@@ -244,9 +257,17 @@ export default function BrowserLayout() {
         setChatMessages(data.messages || []);
         setNextId(data.nextId);
         setActiveTabId(data.activeTabId);
+        setActiveTabIdSession(data.activeTabId);
         setXSession(data.X);
         setYSession(data.Y);
 
+        const activeTab = data.tabs.find(
+          (tab: tab) => tab.id === data.activeTabId
+        );
+        if (activeTab) {
+          setUrl(activeTab.url);
+          setCurrentUrl(activeTab.url);
+        }
         break;
 
       case "chat_message":
@@ -342,13 +363,14 @@ export default function BrowserLayout() {
       alert("Not connected to server");
       return;
     }
-    console.log("sending");
-    wsRef.current.send(
-      JSON.stringify({
-        type: "active_tab_id",
-        activeTabId: tabId,
-      })
-    );
+    if (shared) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "active_tab_id",
+          activeTabId: tabId,
+        })
+      );
+    }
   };
   const navigateBack = () => {
     const activeWebview = webviewRefs.current[activeTabId] as any;

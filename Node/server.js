@@ -106,7 +106,7 @@ function handleChangeActiveTab(ws, message){
     }));
     return;
   } 
-  sessions[sessionCode].useractiveTabId = message.activeTabId
+  sessions[sessionCode].activeTabId = message.activeTabId
 
   // ws.send(JSON.stringify({
   //   type: "activeTab_changed",
@@ -140,7 +140,6 @@ function handleCreateSession(ws, message) {
     tabs: initialTabs, 
     nextId: message.nextId ,
     activeTabId: message.activeTabId,
-    useractiveTabId: message.activeTabId,
     X: 0,
     Y: 0
     
@@ -187,7 +186,6 @@ function handleJoinSession(ws, message) {
     tabs: sessions[sessionCode].tabs,
     nextId: sessions[sessionCode].nextId,
     activeTabId: sessions[sessionCode].activeTabId,
-    useractiveTabId: message.activeTabId,
     X: sessions[sessionCode].X || 0, 
     Y: sessions[sessionCode].Y || 0
   }));
@@ -259,7 +257,8 @@ function ChangeSharedUrl(ws, message){
       id: sessions[sessionCode].tabs[tabIndex].id,
       url: sessions[sessionCode].tabs[tabIndex].url,
       favIcon: sessions[sessionCode].tabs[tabIndex].favIcon
-    }
+    },
+    activeTabId: sessions[sessionCode].activeTabId
   };
 
   broadcastToSession(sessionCode, typeMessage, ws);
