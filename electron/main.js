@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
 import { ipcMain } from 'electron';
+import { saveHistory, loadHistory } from './history.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,16 +29,25 @@ icon: path.join(__dirname, '..', 'src', 'assets', 'Browser.ico'),
   win.loadURL('http://localhost:5173');
 }
 
-ipcMain.handle('get-cookies', async (event, partition) => {
+ipcMain.handle('get-cookies', async (_event, partition) => {
   const ses = session.fromPartition(partition);
   const cookies = await ses.cookies.get({});
   return cookies;
 });
 
 
+ipcMain.handle('history:save',(_event, url, favicon)=>{
+  saveHistory(url,favicon);
+})
+
+ipcMain.handle('history:load',(_event)=>{
+  return loadHistory();
+})
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
+
+

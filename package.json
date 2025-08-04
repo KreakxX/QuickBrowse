@@ -11,21 +11,20 @@
     "preview": "vite preview",
     "start": "concurrently \"npm run dev\" \"npm run electron\"",
     "dist": "electron-builder"
-
   },
   "build": {
-  "appId": "com.mycompany.myapp",
-  "productName": "MyElectronApp",
-  "files": [
-    "electron/**/*",
-    "dist/**/*",
-    "node_modules/**/*",
-    "package.json"
-  ],
-  "win": {
-    "target": "nsis"
-  }
-},
+    "appId": "com.mycompany.myapp",
+    "productName": "MyElectronApp",
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -34,6 +33,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@tailwindcss/vite": "^4.1.11",
+    "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/electron": "^1.4.38",
     "@types/node": "^24.0.15",
     "@types/react": "^19.1.8",
@@ -54,6 +55,7 @@
     "concurrently": "^9.2.0",
     "electron": "^37.2.3",
     "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.30.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
@@ -65,7 +67,7 @@
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "electron/main.js",
-    "repository": {
+  "repository": {
     "type": "git",
     "url": "git+https://github.com/KreakxX/QuickBrowse.git"
   },

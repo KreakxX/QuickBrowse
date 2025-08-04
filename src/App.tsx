@@ -13,6 +13,9 @@ import {
   Link,
   MousePointer2,
   Download,
+  History,
+  Navigation,
+  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +40,15 @@ declare global {
     electronAPI?: {
       getCookies: (partition: string) => Promise<any>;
       sendLog?: (msg: string) => void;
+      historysave: (url: string, favicon: string) => void;
+      historyload: () => Promise<
+        Array<{
+          id: number;
+          url: string;
+          favicon: string;
+          timestamp: number;
+        }>
+      >;
     };
   }
 }
@@ -48,21 +60,22 @@ export default function BrowserLayout() {
   const [nextId, setNextId] = useState(1);
   const [activeTabId, setActiveTabId] = useState<number>(0);
   const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
-  const [shared, setShared] = useState<boolean>(true);
+  const [shared, setShared] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("KreakxX");
   const [shareCursor, setShareCursor] = useState<boolean>(false);
-
   const wsRef = useRef<WebSocket | null>(null);
 
   interface ChatMessage {
     username?: string;
     message?: string;
   }
-
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [sessionCode, setSessionCode] = useState<string>("");
-
+  const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
+  const [history, setHistory] = useState<
+    { id: number; url: string; favicon: string; timestamp: number }[]
+  >([]);
   const [xSession, setXSession] = useState<number>(0);
   const [ySession, setYSession] = useState<number>(0);
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([
@@ -75,6 +88,39 @@ export default function BrowserLayout() {
     { url: "https://web.de", favIcon: "https://web.de/favicon.ico" },
     { url: "https://canva.com", favIcon: "https://canva.com/favicon.ico" },
   ]);
+
+  interface color {
+    name: string;
+    hex: string;
+    secondary: string;
+  }
+
+  const [activeTheme, setActiveTheme] = useState<color>();
+
+  const colors = [
+    { name: "default", hex: "#27272a", secondary: "#3f3f46" },
+    { name: "pastelBlue", hex: "#AEC6CF", secondary: "#90ACB7" },
+    { name: "pastelGreen", hex: "#B2F2BB", secondary: "#91D4A0" },
+    { name: "pastelPink", hex: "#FFD1DC", secondary: "#E6AAB8" },
+    { name: "pastelPurple", hex: "#CBAACB", secondary: "#A98AA9" },
+    { name: "pastelYellow", hex: "#FFF5BA", secondary: "#E6D998" },
+    { name: "mint", hex: "#AAF0D1", secondary: "#8BD3B6" },
+    { name: "babyBlue", hex: "#BFEFFF", secondary: "#9ACDDC" },
+    { name: "lavender", hex: "#E6E6FA", secondary: "#CFCFE3" },
+    { name: "peach", hex: "#FFDAB9", secondary: "#E6BB93" },
+    { name: "lightCoral", hex: "#F08080", secondary: "#CC6666" },
+    { name: "seafoam", hex: "#9FE2BF", secondary: "#7FC1A1" },
+    { name: "lightLilac", hex: "#D8B7DD", secondary: "#B995BD" },
+    { name: "blush", hex: "#F9C6C9", secondary: "#DAA5A9" },
+    { name: "softTeal", hex: "#B2DFDB", secondary: "#8FC0BE" },
+    { name: "paleOrange", hex: "#FFD8B1", secondary: "#E6B48C" },
+    { name: "pastelCyan", hex: "#B2FFFF", secondary: "#90DCDC" },
+    { name: "lightRose", hex: "#FADADD", secondary: "#DCB8BB" },
+    { name: "honeydew", hex: "#F0FFF0", secondary: "#D1E6D1" },
+    { name: "powderBlue", hex: "#B0E0E6", secondary: "#8FC2C7" },
+    { name: "mist", hex: "#D6EAF8", secondary: "#B6C9D6" },
+  ];
+
   const activeTabIdRef = useRef(activeTabId);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
@@ -89,6 +135,10 @@ export default function BrowserLayout() {
     favIcon?: string;
   }
 
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  // checking sometimes gets called multiple times like registering again and agai => no clean moving back
+  // Browsing history, watch together, leave Session or close Session sqlite DB
   // if you navigate you should also update the tab path
   const [tabs, setTabs] = useState<tab[]>([
     {
@@ -97,6 +147,20 @@ export default function BrowserLayout() {
       favIcon: "https://google.com/favicon.ico",
     },
   ]);
+
+  useEffect(() => {
+    if (!currentUrl.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const matches = history
+      .filter((item) =>
+        item.url.toLowerCase().includes(currentUrl.toLowerCase())
+      )
+      .map((item) => item.url)
+      .slice(0, 5);
+    setSuggestions(matches);
+  }, [currentUrl, history]);
 
   useEffect(() => {
     activeTabIdRef.current = activeTabId;
@@ -132,6 +196,18 @@ export default function BrowserLayout() {
     };
   }, []);
 
+  const loadHistory = async () => {
+    if (!window.electronAPI?.historyload) return;
+    const history = await window.electronAPI.historyload();
+    const fixedHistory = history.map(({ id, url, favicon, timestamp }) => ({
+      id,
+      url,
+      favicon,
+      timestamp: timestamp,
+    }));
+
+    setHistory(fixedHistory);
+  };
   // gucken was man alles easy sharen kann
   useEffect(() => {
     const handleWebViewEvents = () => {
@@ -154,6 +230,11 @@ export default function BrowserLayout() {
                 }
               : tab
           )
+        );
+
+        window.electronAPI?.historysave(
+          newUrl,
+          new URL(newUrl).origin + "/favicon.ico"
         );
 
         if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -213,7 +294,6 @@ export default function BrowserLayout() {
         // problem is activeTabId and SessionId wont update correctly when adding a new Tab and switching to it
         // it needs to be checking the locally thing
         if (data.tab.id === activeTabIdRef.current) {
-          // wont change
           setCurrentUrl(data.tab.url);
           setUrl(data.tab.url);
           const webview = webviewRefs.current[data.tab.id] as any;
@@ -496,12 +576,15 @@ export default function BrowserLayout() {
     <div className="h-screen bg-zinc-800 text-white flex flex-col ">
       <div className="flex h-full w-full overflow-hidden justify-between">
         {showSidebar ? (
-          <div className="w-64 bg-zinc-800 border-r border-gray-700 flex flex-col">
+          <div
+            style={{ backgroundColor: activeTheme?.hex }}
+            className="w-64  border-r border-gray-700 flex flex-col"
+          >
             <div className="flex items-center space-x-2 ml-2 mt-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent "
                 onClick={() => {
                   navigateBack();
                 }}
@@ -511,7 +594,7 @@ export default function BrowserLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent"
                 onClick={() => {
                   navigateForward();
                 }}
@@ -521,7 +604,7 @@ export default function BrowserLayout() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent "
                 onClick={() => {
                   refresh();
                 }}
@@ -534,16 +617,59 @@ export default function BrowserLayout() {
                 <Input
                   value={currentUrl}
                   onChange={(e) => setCurrentUrl(e.target.value)}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setTimeout(() => setInputFocused(false), 100)}
                   onKeyDown={handleKeyDown}
-                  className="bg-zinc-700 border-gray-600 text-white placeholder-gray-400 h-8 "
+                  style={{
+                    backgroundColor: activeTheme?.secondary,
+                    borderColor: activeTheme?.secondary,
+                  }}
+                  className=" text-white placeholder-gray-400 h-8 "
                   placeholder="Enter URL..."
                 />
+                {suggestions.length > 0 && inputFocused && (
+                  <div
+                    style={{
+                      backgroundColor: activeTheme?.secondary,
+                      borderColor: activeTheme?.secondary,
+                    }}
+                    className=" rounded-lg "
+                  >
+                    {suggestions.map((suggestion) => (
+                      <Button
+                        onClick={(e) => {
+                          setUrl(suggestion);
+                          setCurrentUrl(suggestion);
+                        }}
+                        style={{
+                          backgroundColor: activeTheme?.secondary,
+                          borderColor: activeTheme?.secondary,
+                        }}
+                        className=" mt-2 p-2 ml-2 flex"
+                      >
+                        <img
+                          src={new URL(suggestion).origin + "/favicon.ico"}
+                          alt="favicon"
+                          className="w-5 h-5 mr-2  mt-0.5"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                        <div className="truncate"> {suggestion} </div>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex gap-2 mt-2">
                   <Button
+                    style={{
+                      backgroundColor: !shareCursor
+                        ? activeTheme?.secondary
+                        : undefined,
+                    }}
                     className={` w-1/2 rounded-lg  mt-2 ${
-                      shareCursor
-                        ? "bg-green-600 hover:bg-green-600"
-                        : "bg-zinc-700 hover:bg-zinc-700"
+                      shareCursor ? "bg-green-600 hover:bg-green-600" : ""
                     }`}
                     onClick={() => {
                       setShareCursor(!shareCursor);
@@ -555,16 +681,22 @@ export default function BrowserLayout() {
                     <form className="w-1/2">
                       <DialogTrigger asChild>
                         <Button
-                          className={`rounded-lg  w-full mt-2 ${
-                            shared
-                              ? "bg-green-600 hover:bg-green-600"
-                              : "bg-zinc-700 hover:bg-zinc-700"
+                          style={{
+                            backgroundColor: !shared
+                              ? activeTheme?.secondary
+                              : undefined,
+                          }}
+                          className={` w-full rounded-lg  mt-2 ${
+                            shared ? "bg-green-600 hover:bg-green-600" : ""
                           }`}
                         >
                           <Link></Link>
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0 bg-zinc-800 border-none">
+                      <DialogContent
+                        style={{ backgroundColor: activeTheme?.secondary }}
+                        className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0  border-none"
+                      >
                         <DialogHeader>
                           <DialogTitle className="text-white">
                             Session Settings
@@ -574,20 +706,45 @@ export default function BrowserLayout() {
                           </DialogDescription>
                         </DialogHeader>
                         <Tabs defaultValue="join" className="w-full">
-                          <TabsList className="w-full bg-zinc-700">
+                          <TabsList
+                            style={{ backgroundColor: activeTheme?.hex }}
+                            className="w-full bg-zinc-700"
+                          >
                             <TabsTrigger
-                              className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                              style={
+                                {
+                                  "--tab-bg": activeTheme?.hex,
+                                  "--tab-bg-active": activeTheme?.secondary, // fallback oder deine aktive Farbe
+                                } as React.CSSProperties
+                              }
+                              className="
+      text-white
+      bg-[var(--tab-bg)]
+      data-[state=active]:bg-[var(--tab-bg-active)]
+    "
                               value="join"
                             >
                               Join
                             </TabsTrigger>
+
                             <TabsTrigger
-                              className="bg-zinc-700 text-white data-[state=active]:bg-zinc-900 data-[state=active]:text-white"
+                              style={
+                                {
+                                  "--tab-bg": activeTheme?.hex,
+                                  "--tab-bg-active": activeTheme?.secondary,
+                                } as React.CSSProperties
+                              }
+                              className="
+      text-white
+      bg-[var(--tab-bg)]
+      data-[state=active]:bg-[var(--tab-bg-active)]
+    "
                               value="create"
                             >
                               Create
                             </TabsTrigger>
                           </TabsList>
+
                           <TabsContent value="join">
                             <Input
                               onChange={(e) => {
@@ -608,6 +765,9 @@ export default function BrowserLayout() {
                             <Button
                               onClick={() => {
                                 joinSession();
+                              }}
+                              style={{
+                                backgroundColor: activeTheme?.hex,
                               }}
                               className="w-full"
                             >
@@ -633,6 +793,9 @@ export default function BrowserLayout() {
                               onClick={() => {
                                 createSession();
                               }}
+                              style={{
+                                backgroundColor: activeTheme?.hex,
+                              }}
                               className="w-full"
                             >
                               Create Session
@@ -655,7 +818,8 @@ export default function BrowserLayout() {
                     }}
                     key={index}
                     variant="ghost"
-                    className={`w-12 h-12 rounded-lg bg-zinc-700 hover:bg-zinc-600  p-0 flex items-center justify-center transition-colors`}
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className={`w-12 h-12 rounded-lg   p-0 flex items-center justify-center transition-colors`}
                   >
                     {tab.favIcon ? (
                       <img
@@ -681,7 +845,7 @@ export default function BrowserLayout() {
                   }}
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start text-gray-400 hover:text-white hover:bg-zinc-700 "
+                  className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   New tab
@@ -697,11 +861,12 @@ export default function BrowserLayout() {
                         className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded 
   ${
     tab.id === activeTabIdSession && shared
-      ? "bg-zinc-600 border border-green-500"
+      ? " border border-green-500"
       : tab.id === activeTabId
-      ? "bg-zinc-600 border border-blue-500"
-      : "bg-zinc-700 border-none hover:bg-zinc-600"
+      ? " border border-blue-500"
+      : " border-none hover:bg-zinc-600"
   } rounded-lg`}
+                        style={{ backgroundColor: activeTheme?.secondary }}
                       >
                         {tab.favIcon && (
                           <img
@@ -730,88 +895,206 @@ export default function BrowserLayout() {
                 })}
               </div>
             </div>
-
-            {shared ? (
+            <div className="flex justify-between w-[20%]">
               <Dialog>
-                <form>
-                  <DialogTrigger asChild>
-                    <Button className="rounded-lg mb-3 ml-3">
-                      <MessageCircle></MessageCircle>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogTrigger asChild></DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px] left-3 top-[44%] translate-x-0 translate-y-0 bg-zinc-800 border-none">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">
-                        Session Chat
-                      </DialogTitle>
-                      <DialogDescription>
-                        Communicate with your fellas in Quick Browse
-                      </DialogDescription>
-                    </DialogHeader>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      loadHistory();
+                    }}
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                  >
+                    <History></History>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ backgroundColor: activeTheme?.hex }}
+                  className="max-w-[425px]   border-none"
+                >
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      Search History
+                    </DialogTitle>
+                    <DialogDescription>
+                      View your search history
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[600px] max-w-[400px] ">
+                    {history.map((history) => (
+                      <div className="flex justify-between mb-3">
+                        {history.favicon && (
+                          <img
+                            src={history.favicon}
+                            alt="favicon"
+                            className="w-5 h-5 mr-2 mt-2"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        )}
 
-                    <ScrollArea className="h-[600px]">
-                      {chatMessages.map((message, index) => {
-                        const isCurrentUser = message.username === username;
-                        return (
-                          <div
-                            key={index}
-                            className={`flex ${
-                              isCurrentUser ? "justify-end" : "justify-start"
-                            } mt-5 mb-5`}
-                          >
-                            <div className="flex gap-2 items-start">
-                              {!isCurrentUser && (
-                                <Avatar>
-                                  <AvatarFallback className="bg-zinc-700 text-white">
-                                    {message.username
-                                      ?.slice(0, 2)
-                                      .toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                              {isCurrentUser ? (
-                                <p className="text-white bg-zinc-500 rounded-lg p-3 max-w-[200px] break-words">
-                                  {message.message}
-                                </p>
-                              ) : (
-                                <p className="text-white bg-zinc-700 rounded-lg p-3 max-w-[200px] break-words">
-                                  {message.message}
-                                </p>
-                              )}
-                              {isCurrentUser && (
-                                <Avatar>
-                                  <AvatarFallback className="bg-zinc-700 text-white">
-                                    {username.slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </ScrollArea>
-                    <div className="flex justify-between gap-3">
-                      <Input
-                        value={messageInput}
-                        onChange={(e) => {
-                          setMessageInput(e.target.value);
-                        }}
-                        placeholder="Enter Chat Message"
-                        className="text-white"
-                      ></Input>
+                        <Button
+                          onClick={() => {
+                            setUrl(history.url);
+                            setCurrentUrl(history.url);
+                          }}
+                          className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
+                        >
+                          <span className="truncate block w-full text-left">
+                            {history.url}
+                          </span>
+                        </Button>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      loadHistory();
+                    }}
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                  >
+                    <Palette></Palette>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ backgroundColor: activeTheme?.hex }}
+                  className="max-w-[425px] border-none"
+                >
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Themes</DialogTitle>
+                    <DialogDescription>Choose your Theme</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-wrap gap-3">
+                    {colors.map((color) => (
                       <Button
                         onClick={() => {
-                          sendChatMessage();
+                          setActiveTheme(color);
                         }}
+                        style={{ backgroundColor: color.hex }}
+                        className="rounded-full w-8 h-8"
+                      ></Button>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>{" "}
+              {shared ? (
+                <Dialog>
+                  <form>
+                    <DialogTrigger asChild>
+                      <Button
+                        style={{ backgroundColor: activeTheme?.secondary }}
+                        className="rounded-lg mb-3 ml-3 w-12 h-12"
                       >
-                        <ArrowBigRight></ArrowBigRight>
+                        <MessageCircle></MessageCircle>
                       </Button>
-                    </div>
-                  </DialogContent>
-                </form>
-              </Dialog>
-            ) : null}
+                    </DialogTrigger>
+                    <DialogTrigger asChild></DialogTrigger>
+                    <DialogContent
+                      style={{ backgroundColor: activeTheme?.hex }}
+                      className="max-w-[425px]   border-none"
+                    >
+                      <DialogHeader>
+                        <DialogTitle className="text-white">
+                          Session Chat
+                        </DialogTitle>
+                        <DialogDescription>
+                          Communicate with your fellas in Quick Browse
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <ScrollArea className="max-h-[600px] ">
+                        {chatMessages.map((message, index) => {
+                          const isCurrentUser = message.username === username;
+                          return (
+                            <div
+                              key={index}
+                              className={`flex ${
+                                isCurrentUser ? "justify-end" : "justify-start"
+                              } mt-5 mb-5`}
+                            >
+                              <div className="flex gap-2 items-start">
+                                {!isCurrentUser && (
+                                  <Avatar>
+                                    <AvatarFallback
+                                      style={{
+                                        backgroundColor: activeTheme?.secondary,
+                                      }}
+                                      className="text-white"
+                                    >
+                                      {message.username
+                                        ?.slice(0, 2)
+                                        .toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
+                                {isCurrentUser ? (
+                                  <p
+                                    style={{
+                                      backgroundColor: activeTheme?.secondary,
+                                    }}
+                                    className="text-white  rounded-lg p-3 max-w-[200px] break-words"
+                                  >
+                                    {message.message}
+                                  </p>
+                                ) : (
+                                  <p
+                                    style={{
+                                      backgroundColor: activeTheme?.secondary,
+                                    }}
+                                    className="text-white rounded-lg p-3 max-w-[200px] break-words"
+                                  >
+                                    {message.message}
+                                  </p>
+                                )}
+                                {isCurrentUser && (
+                                  <Avatar>
+                                    <AvatarFallback
+                                      style={{
+                                        backgroundColor: activeTheme?.secondary,
+                                      }}
+                                      className=" text-white"
+                                    >
+                                      {username.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </ScrollArea>
+
+                      <div className="flex justify-between gap-3">
+                        <Input
+                          value={messageInput}
+                          onChange={(e) => {
+                            setMessageInput(e.target.value);
+                          }}
+                          placeholder="Enter Chat Message"
+                          className="text-white"
+                        ></Input>
+                        <Button
+                          style={{
+                            backgroundColor: activeTheme?.secondary,
+                          }}
+                          onClick={() => {
+                            sendChatMessage();
+                          }}
+                        >
+                          <ArrowBigRight></ArrowBigRight>
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </form>
+                </Dialog>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
