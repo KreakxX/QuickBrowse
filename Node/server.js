@@ -43,6 +43,15 @@ wss.on('connection', (ws) => {
       case 'cursor_changed':
         ShareCursor(ws,message);
         break;
+      case 'enableWatchTogether':
+        enableWatchTogether(ws,message);
+        break;
+      case 'youtube_play':
+        youtube_play(ws,message);
+        break;
+      case 'youtube_pause':
+        youtube_pause(ws,message);
+        break;
     }
   });
 
@@ -59,6 +68,61 @@ wss.on('connection', (ws) => {
   });
 });
 
+
+function youtube_play(ws, message){
+      console.log("CALLED PLAY")
+
+  const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+    const playMessage = {
+      type: "youtube_play"
+    }
+
+    broadcastToSession(sessionCode,playMessage,ws)
+}
+
+function youtube_pause(ws, message){
+      console.log("CALLED PAUSE")
+
+  const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+
+    const pauseMessage = {
+      type: "youtube_pause"
+    }
+
+    broadcastToSession(sessionCode,pauseMessage,ws)
+}
+function enableWatchTogether(ws, message){
+    const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+  
+    const watchTogetherMessage = {
+      type: "enableWatchTogether",
+      watchTogether: message.watchTogether,
+      embedUrl: message.embedUrl
+    }
+
+    broadcastToSession(sessionCode,watchTogetherMessage,ws)
+}
 
 function ShareCursor(ws, message){
     const sessionCode = ws.sessionCode;

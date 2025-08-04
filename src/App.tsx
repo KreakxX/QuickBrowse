@@ -16,6 +16,8 @@ import {
   History,
   Navigation,
   Palette,
+  Youtube,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +66,10 @@ export default function BrowserLayout() {
   const [username, setUsername] = useState<string>("KreakxX");
   const [shareCursor, setShareCursor] = useState<boolean>(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const [watchTogether, setWatchTogether] = useState<boolean>(false);
+  const [watchTogetherURL, setWatchTogetherURL] = useState<string>("");
+  const [watchTogetherCurrentURL, setWatchTogetherCurrentURL] =
+    useState<string>("");
 
   interface ChatMessage {
     username?: string;
@@ -95,7 +101,11 @@ export default function BrowserLayout() {
     secondary: string;
   }
 
-  const [activeTheme, setActiveTheme] = useState<color>();
+  const [activeTheme, setActiveTheme] = useState<color>({
+    name: "default",
+    hex: "#27272a",
+    secondary: "#3f3f46",
+  });
 
   const colors = [
     { name: "default", hex: "#27272a", secondary: "#3f3f46" },
@@ -136,6 +146,31 @@ export default function BrowserLayout() {
   }
 
   const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  function extractYouTubeVideoID(url: string): string | null {
+    try {
+      const parsedUrl = new URL(url);
+
+      // Check for standard YouTube URL with 'v' param
+      if (
+        parsedUrl.hostname.includes("youtube.com") &&
+        parsedUrl.searchParams.has("v")
+      ) {
+        return parsedUrl.searchParams.get("v");
+      }
+
+      // Check for youtu.be short URL, e.g. https://youtu.be/VIDEO_ID
+      if (parsedUrl.hostname === "youtu.be") {
+        return parsedUrl.pathname.slice(1); // remove leading '/'
+      }
+
+      // Optionally: check for embed URLs or other formats
+
+      return null; // no valid video ID found
+    } catch {
+      return null; // invalid URL
+    }
+  }
 
   // checking sometimes gets called multiple times like registering again and agai => no clean moving back
   // Browsing history, watch together, leave Session or close Session sqlite DB
@@ -330,6 +365,17 @@ export default function BrowserLayout() {
         setActiveTabIdSession(data.activeTabId);
         break;
 
+      case "enableWatchTogether":
+        setWatchTogether(data.watchTogether);
+        setWatchTogetherURL(data.embedUrl);
+        break;
+
+      case "youtube_play":
+        playvideo();
+        break;
+      case "youtube_pause":
+        pausevideo();
+        break;
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
@@ -378,6 +424,83 @@ export default function BrowserLayout() {
         currentTabs: tabs,
         nextId: nextId,
         activeTabId: activeTabId,
+      })
+    );
+  };
+
+  // Watch Together Logic
+  const playvideo = () => {
+    console.log("CALLED");
+
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe?.contentWindow?.postMessage(
+      '{"event":"command","func":"playVideo","args":[]}',
+      "*"
+    );
+  };
+
+  const pausevideo = () => {
+    console.log("CALLED");
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe?.contentWindow?.postMessage(
+      '{"event":"command","func":"pauseVideo","args":[]}',
+      "*"
+    );
+  };
+  // capturing play and pause
+  useEffect(() => {
+    if (!watchTogether) return;
+    const handleMessage = (event: any) => {
+      console.log("HERE");
+      if (!event.origin.includes("youtube.com")) return;
+      try {
+        const data = JSON.parse(event.data);
+        console.log("IN THE USEEFFECT");
+        if (data.event === "onStateChange") {
+          console.log("STATE CHANGED");
+          if (data.info === 1) {
+            wsRef.current?.send(
+              JSON.stringify({
+                type: "youtube_play",
+              })
+            );
+          } else if (data.info === 2) {
+            wsRef.current?.send(
+              JSON.stringify({
+                type: "youtube_pause",
+              })
+            );
+          }
+        }
+      } catch (e) {}
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [watchTogether]);
+
+  const EnableWatchTogether = () => {
+    setWatchTogether(true);
+    const videoID = extractYouTubeVideoID(watchTogetherCurrentURL);
+    let embedURL = "";
+    if (videoID) {
+      embedURL = `https://www.youtube.com/embed/${videoID}?enablejsapi=1&origin=${window.location.origin}`;
+      setWatchTogetherURL(embedURL);
+    }
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "enableWatchTogether",
+        watchTogether: true,
+        embedUrl: embedURL,
       })
     );
   };
@@ -959,6 +1082,61 @@ export default function BrowserLayout() {
                     style={{ backgroundColor: activeTheme?.secondary }}
                     className="rounded-lg mb-3 ml-3 w-12 h-12 "
                   >
+                    <Youtube></Youtube>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ backgroundColor: activeTheme?.hex }}
+                  className="max-w-[425px] border-none"
+                >
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      Watch Together
+                    </DialogTitle>
+                    <DialogDescription>
+                      Choose a Youtube Video for watching together
+                    </DialogDescription>
+                  </DialogHeader>
+                  {watchTogether ? (
+                    <div>
+                      <Button
+                        onClick={() => {
+                          setWatchTogether(false);
+                        }}
+                      >
+                        End Session <X></X>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <Input
+                        onChange={(e) => {
+                          setWatchTogetherCurrentURL(e.target.value);
+                        }}
+                        className="text-white placeholder:text-white"
+                        placeholder="Enter Youtube URL"
+                      ></Input>
+                      <Button
+                        className="w-full mt-2"
+                        onClick={() => {
+                          EnableWatchTogether();
+                        }}
+                      >
+                        <Play></Play>
+                      </Button>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>{" "}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    onClick={() => {
+                      loadHistory();
+                    }}
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                  >
                     <Palette></Palette>
                   </Button>
                 </DialogTrigger>
@@ -1130,23 +1308,33 @@ export default function BrowserLayout() {
               />
             ) : null}
 
-            {tabs.map((tab) => (
-              <webview
-                ref={(el) => {
-                  webviewRefs.current[tab.id] = el;
-                }}
-                src={tab.id === activeTabId ? url : tab.url}
-                className={`absolute top-0 left-0 w-full h-full z-10 ${
-                  tab.id === activeTabId ? "flex" : "hidden"
-                }`}
-                partition="persist:QuickBrowse"
-                allowpopups={false}
-                style={{
-                  pointerEvents: shareCursor ? "none" : "auto",
-                }}
-                webpreferences="contextIsolation,sandbox"
+            {!watchTogether ? (
+              tabs.map((tab) => (
+                <webview
+                  ref={(el) => {
+                    webviewRefs.current[tab.id] = el;
+                  }}
+                  src={tab.id === activeTabId ? url : tab.url}
+                  className={`absolute top-0 left-0 w-full h-full z-10 ${
+                    tab.id === activeTabId ? "flex" : "hidden"
+                  }`}
+                  partition="persist:QuickBrowse"
+                  allowpopups={false}
+                  style={{
+                    pointerEvents: shareCursor ? "none" : "auto",
+                  }}
+                  webpreferences="contextIsolation,sandbox"
+                />
+              ))
+            ) : (
+              <iframe
+                src={watchTogetherURL}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                className="absolute top-0 left-0 w-full h-full"
+                id="youtube-iframe"
               />
-            ))}
+            )}
           </div>
         </div>
       </div>
