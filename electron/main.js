@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { Menu } from "electron";
 import { ipcMain } from 'electron';
 import { saveHistory, loadHistory } from './history.js';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,7 @@ ipcMain.handle('get-cookies', async (_event, partition) => {
   const cookies = await ses.cookies.get({});
   return cookies;
 });
+
 
 
 ipcMain.handle('history:save',(_event, url, favicon)=>{

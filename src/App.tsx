@@ -295,12 +295,29 @@ export default function BrowserLayout() {
         }
       };
 
+      const handleTitleUpdate = (event: any) => {
+        setTabs((prev) =>
+          prev.map((tab) =>
+            tab.id === activeTabId
+              ? {
+                  ...tab,
+                  title: event.title || tab.title,
+                }
+              : tab
+          )
+        );
+      };
+      activeWebView.addEventListener("page-title-updated", handleTitleUpdate);
       activeWebView.addEventListener("did-navigate", handleNavigate);
       activeWebView.addEventListener("did-navigate-in-page", handleNavigate);
 
       // Cleanup function to remove event listeners
       return () => {
         activeWebView.removeEventListener("did-navigate", handleNavigate);
+        activeWebView.removeEventListener(
+          "page-title-updated",
+          handleTitleUpdate
+        );
         activeWebView.removeEventListener(
           "did-navigate-in-page",
           handleNavigate
@@ -1070,8 +1087,77 @@ export default function BrowserLayout() {
               </div>
 
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
-                {tabs.map((tab) => {
-                  return (
+                {tabs.map((tab) =>
+                  tab.id == activeTabId && splitViewURL ? (
+                    <div key={tab.id} className="mb-2 relative group">
+                      <button
+                        onClick={() => switchToTab(tab.id)}
+                        className={`w-full h-10 flex items-center justify-center text-left px-3 rounded ${
+                          tab.id === activeTabIdSession && shared
+                            ? " border border-green-500"
+                            : tab.id === activeTabId
+                            ? " border border-blue-500"
+                            : " border-none hover:bg-zinc-600"
+                        } rounded-lg`}
+                        style={{ backgroundColor: activeTheme?.secondary }}
+                      >
+                        {tab.favIcon && (
+                          <img
+                            src={tab.favIcon || "/placeholder.svg"}
+                            alt="favicon"
+                            className="w-5 h-5 mr-2"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        )}
+                        <img
+                          src={
+                            splitViewURL + "/favicon.ico" || "/placeholder.svg"
+                          }
+                          alt="favicon"
+                          className="w-5 h-5 mr-2"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            onClick={() => {
+                              closeTab(tab.id);
+                            }}
+                            className=" h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
+                          >
+                            <X></X>
+                          </Button>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              if (activeTabId !== tab.id) {
+                                if (splitViewURL && splitViewURL === tab.url) {
+                                  setSplitViewURL(null);
+                                } else {
+                                  setSplitViewURL(tab.url);
+                                }
+                              }
+                            }}
+                            className="h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
+                          >
+                            <Scaling
+                              className={`${
+                                splitViewURL === tab.url &&
+                                activeTabId !== tab.id
+                                  ? "text-green-500"
+                                  : "text-white"
+                              }`}
+                            ></Scaling>
+                          </Button>
+                        </div>
+                      </button>
+                    </div>
+                  ) : (
                     <div key={tab.id} className="mb-2 relative group">
                       <button
                         onClick={() => switchToTab(tab.id)}
@@ -1132,8 +1218,8 @@ export default function BrowserLayout() {
                         </div>
                       </button>
                     </div>
-                  );
-                })}
+                  )
+                )}
               </div>
             </div>
             <div className="flex justify-between w-[20%]">
@@ -1191,61 +1277,63 @@ export default function BrowserLayout() {
                   </ScrollArea>
                 </DialogContent>
               </Dialog>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      loadHistory();
-                    }}
-                    style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+              {shared ? (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        loadHistory();
+                      }}
+                      style={{ backgroundColor: activeTheme?.secondary }}
+                      className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                    >
+                      <Youtube size={30}></Youtube>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent
+                    style={{ backgroundColor: activeTheme?.hex }}
+                    className="max-w-[425px] border-none"
                   >
-                    <Youtube size={30}></Youtube>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent
-                  style={{ backgroundColor: activeTheme?.hex }}
-                  className="max-w-[425px] border-none"
-                >
-                  <DialogHeader>
-                    <DialogTitle className="text-white">
-                      Watch Together
-                    </DialogTitle>
-                    <DialogDescription>
-                      Choose a Youtube Video for watching together
-                    </DialogDescription>
-                  </DialogHeader>
-                  {watchTogether ? (
-                    <div>
-                      <Button
-                        onClick={() => {
-                          setWatchTogether(false);
-                        }}
-                      >
-                        End Session <X></X>
-                      </Button>
-                    </div>
-                  ) : (
-                    <div>
-                      <Input
-                        onChange={(e) => {
-                          setWatchTogetherCurrentURL(e.target.value);
-                        }}
-                        className="text-white placeholder:text-white"
-                        placeholder="Enter Youtube URL"
-                      ></Input>
-                      <Button
-                        className="w-full mt-2"
-                        onClick={() => {
-                          EnableWatchTogether();
-                        }}
-                      >
-                        <Play></Play>
-                      </Button>
-                    </div>
-                  )}
-                </DialogContent>
-              </Dialog>{" "}
+                    <DialogHeader>
+                      <DialogTitle className="text-white">
+                        Watch Together
+                      </DialogTitle>
+                      <DialogDescription>
+                        Choose a Youtube Video for watching together
+                      </DialogDescription>
+                    </DialogHeader>
+                    {watchTogether ? (
+                      <div>
+                        <Button
+                          onClick={() => {
+                            setWatchTogether(false);
+                          }}
+                        >
+                          End Session <X></X>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div>
+                        <Input
+                          onChange={(e) => {
+                            setWatchTogetherCurrentURL(e.target.value);
+                          }}
+                          className="text-white placeholder:text-white"
+                          placeholder="Enter Youtube URL"
+                        ></Input>
+                        <Button
+                          className="w-full mt-2"
+                          onClick={() => {
+                            EnableWatchTogether();
+                          }}
+                        >
+                          <Play></Play>
+                        </Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              ) : null}
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
@@ -1425,7 +1513,11 @@ export default function BrowserLayout() {
                 }}
               />
             ) : null}
-            {/* refs machen für Performacne aber das ist erster Ansatz */}
+            {/* refs machen für Performacne aber das ist erster Ansatz 
+             Page Title machen für besseres Browsing Erlebnis
+             just showing the ref all time, but adding the new Webview as second resizePanel
+             
+             */}
             {splitViewURL ? (
               <ResizablePanelGroup
                 direction="horizontal"
@@ -1452,10 +1544,11 @@ export default function BrowserLayout() {
                   ))}
                 </ResizablePanel>
                 <ResizableHandle
+                  style={{ borderColor: activeTheme.secondary }}
+                  className="border"
                   onDragging={(isDragging) => {
                     setIsResizing(isDragging);
                   }}
-                  withHandle
                 />
                 <ResizablePanel>
                   <webview
