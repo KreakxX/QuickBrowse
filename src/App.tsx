@@ -69,6 +69,7 @@ export default function BrowserLayout() {
   const [currentUrl, setCurrentUrl] = useState<string>("https://google.com/");
   const [showSidebar, setShowSidebar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
   const [activeTabId, setActiveTabId] = useState<number>(0);
   const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
   const [shared, setShared] = useState<boolean>(false);
@@ -88,7 +89,6 @@ export default function BrowserLayout() {
   const [sessionCode, setSessionCode] = useState<string>("");
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
-  const [splitView, setSplitView] = useState<boolean>(false);
   const [splitViewURL, setSplitViewURL] = useState<string | null>("");
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
@@ -1109,16 +1109,25 @@ export default function BrowserLayout() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (splitViewURL) {
-                                setSplitViewURL(null);
-                              }
+
                               if (activeTabId !== tab.id) {
-                                setSplitViewURL(tab.url);
+                                if (splitViewURL && splitViewURL === tab.url) {
+                                  setSplitViewURL(null);
+                                } else {
+                                  setSplitViewURL(tab.url);
+                                }
                               }
                             }}
                             className="h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
                           >
-                            <Scaling></Scaling>
+                            <Scaling
+                              className={`${
+                                splitViewURL === tab.url &&
+                                activeTabId !== tab.id
+                                  ? "text-green-500"
+                                  : "text-white"
+                              }`}
+                            ></Scaling>
                           </Button>
                         </div>
                       </button>
@@ -1416,8 +1425,12 @@ export default function BrowserLayout() {
                 }}
               />
             ) : null}
+            {/* refs machen für Performacne aber das ist erster Ansatz */}
             {splitViewURL ? (
-              <ResizablePanelGroup direction="horizontal">
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="w-full h-full"
+              >
                 <ResizablePanel>
                   {tabs.map((tab) => (
                     <webview
@@ -1425,27 +1438,34 @@ export default function BrowserLayout() {
                         webviewRefs.current[tab.id] = el;
                       }}
                       src={tab.id === activeTabId ? url : tab.url}
-                      className={`z-10 h-full ${
+                      className={`z-10 w-full h-full ${
                         tab.id === activeTabId ? "flex" : "hidden"
                       }`}
                       partition="persist:QuickBrowse"
                       allowpopups={false}
                       style={{
-                        pointerEvents: shareCursor ? "none" : "auto",
+                        pointerEvents:
+                          shareCursor || isResizing ? "none" : "auto",
                       }}
                       webpreferences="contextIsolation,sandbox"
                     />
                   ))}
                 </ResizablePanel>
-                <ResizableHandle />
+                <ResizableHandle
+                  onDragging={(isDragging) => {
+                    setIsResizing(isDragging);
+                  }}
+                  withHandle
+                />
                 <ResizablePanel>
                   <webview
                     src={splitViewURL}
-                    className={` h-full z-10`}
+                    className={` w-full h-full z-10`}
                     partition="persist:QuickBrowse"
                     allowpopups={false}
                     style={{
-                      pointerEvents: shareCursor ? "none" : "auto",
+                      pointerEvents:
+                        shareCursor || isResizing ? "none" : "auto",
                     }}
                     webpreferences="contextIsolation,sandbox"
                   />
