@@ -13,15 +13,14 @@ function createWindow() {
     width: 1200,
     height: 800,
 icon: path.join(__dirname, '..', 'src', 'assets', 'Browser.ico'),
-
     title: "Quick Browse",
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+    preload: path.join(__dirname, 'preload.js'),
     contextIsolation: true,  // Isolates renderer from preload
-    sandbox: false,           // Enables sandboxing
+    sandbox: true,           // Enables sandboxing, neccessary for the search history
     nodeIntegration: false,  // Prevents access to Node.js in web pages
     webviewTag: true,
-    partition: 'persist:main'
+    partition: 'persist:main'    // this was neccessary for enabling indexedDB for Youtube API to work
     },
   });
 

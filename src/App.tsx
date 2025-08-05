@@ -18,6 +18,11 @@ import {
   Palette,
   Youtube,
   Play,
+  Settings,
+  LucideView,
+  Scale,
+  Scaling,
+  Expand,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +41,11 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
-
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 declare global {
   interface Window {
     electronAPI?: {
@@ -79,6 +88,8 @@ export default function BrowserLayout() {
   const [sessionCode, setSessionCode] = useState<string>("");
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
+  const [splitView, setSplitView] = useState<boolean>(false);
+  const [splitViewURL, setSplitViewURL] = useState<string | null>("");
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
   >([]);
@@ -449,6 +460,37 @@ export default function BrowserLayout() {
     );
   };
 
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  // own algorythm for checking when calling skipping etc
+
+  const skipForward = () => {
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({
+        event: "command",
+        func: "seekTo",
+        args: [currentTime + 10, true],
+      }),
+      "https://www.youtube.com"
+    );
+  };
+
+  const skipBackward = () => {
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({
+        event: "command",
+        func: "seekTo",
+        args: [Math.max(0, currentTime - 10), true],
+      }),
+      "https://www.youtube.com"
+    );
+  };
+
   // capturing play and pause
   useEffect(() => {
     const handleMessage = (event: any) => {
@@ -681,9 +723,8 @@ export default function BrowserLayout() {
 
   const closeTab = (id: number) => {
     const remainingTabs = tabs.filter((tab) => tab.id !== id);
-    setTabs(remainingTabs);
     const tabToDelete = tabs.find((tab) => tab.id === id);
-
+    setTabs(remainingTabs);
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
       return;
@@ -1031,22 +1072,21 @@ export default function BrowserLayout() {
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) => {
                   return (
-                    <div key={tab.id} className="mb-2  relative group">
+                    <div key={tab.id} className="mb-2 relative group">
                       <button
                         onClick={() => switchToTab(tab.id)}
-                        className={`w-full h-10 flex items-center justify-start text-left pr-8 px-3 rounded 
-  ${
-    tab.id === activeTabIdSession && shared
-      ? " border border-green-500"
-      : tab.id === activeTabId
-      ? " border border-blue-500"
-      : " border-none hover:bg-zinc-600"
-  } rounded-lg`}
+                        className={`w-full h-10 flex items-center justify-start text-left px-3 rounded ${
+                          tab.id === activeTabIdSession && shared
+                            ? " border border-green-500"
+                            : tab.id === activeTabId
+                            ? " border border-blue-500"
+                            : " border-none hover:bg-zinc-600"
+                        } rounded-lg`}
                         style={{ backgroundColor: activeTheme?.secondary }}
                       >
                         {tab.favIcon && (
                           <img
-                            src={tab.favIcon}
+                            src={tab.favIcon || "/placeholder.svg"}
                             alt="favicon"
                             className="w-5 h-5 mr-2"
                             onError={(e) =>
@@ -1054,17 +1094,33 @@ export default function BrowserLayout() {
                             }
                           />
                         )}
-                        <div className="truncate flex-1 text-sm">
+                        <div className="truncate flex-1 text-sm mr-2">
                           {tab.title || tab.url}
                         </div>
-                        <Button
-                          onClick={() => {
-                            closeTab(tab.id);
-                          }}
-                          className="bg-transparent relative hover:text-gray-400 left-8 hover:bg-transparent"
-                        >
-                          <X></X>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            onClick={() => {
+                              closeTab(tab.id);
+                            }}
+                            className=" h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
+                          >
+                            <X></X>
+                          </Button>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (splitViewURL) {
+                                setSplitViewURL(null);
+                              }
+                              if (activeTabId !== tab.id) {
+                                setSplitViewURL(tab.url);
+                              }
+                            }}
+                            className="h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
+                          >
+                            <Scaling></Scaling>
+                          </Button>
+                        </div>
                       </button>
                     </div>
                   );
@@ -1135,7 +1191,7 @@ export default function BrowserLayout() {
                     style={{ backgroundColor: activeTheme?.secondary }}
                     className="rounded-lg mb-3 ml-3 w-12 h-12 "
                   >
-                    <Youtube></Youtube>
+                    <Youtube size={30}></Youtube>
                   </Button>
                 </DialogTrigger>
                 <DialogContent
@@ -1360,8 +1416,42 @@ export default function BrowserLayout() {
                 }}
               />
             ) : null}
-
-            {!watchTogether ? (
+            {splitViewURL ? (
+              <ResizablePanelGroup direction="horizontal">
+                <ResizablePanel>
+                  {tabs.map((tab) => (
+                    <webview
+                      ref={(el) => {
+                        webviewRefs.current[tab.id] = el;
+                      }}
+                      src={tab.id === activeTabId ? url : tab.url}
+                      className={`z-10 h-full ${
+                        tab.id === activeTabId ? "flex" : "hidden"
+                      }`}
+                      partition="persist:QuickBrowse"
+                      allowpopups={false}
+                      style={{
+                        pointerEvents: shareCursor ? "none" : "auto",
+                      }}
+                      webpreferences="contextIsolation,sandbox"
+                    />
+                  ))}
+                </ResizablePanel>
+                <ResizableHandle />
+                <ResizablePanel>
+                  <webview
+                    src={splitViewURL}
+                    className={` h-full z-10`}
+                    partition="persist:QuickBrowse"
+                    allowpopups={false}
+                    style={{
+                      pointerEvents: shareCursor ? "none" : "auto",
+                    }}
+                    webpreferences="contextIsolation,sandbox"
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : !watchTogether ? (
               tabs.map((tab) => (
                 <webview
                   ref={(el) => {
