@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
@@ -18,9 +18,10 @@ icon: path.join(__dirname, '..', 'src', 'assets', 'Browser.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     contextIsolation: true,  // Isolates renderer from preload
-    sandbox: true,           // Enables sandboxing
+    sandbox: false,           // Enables sandboxing
     nodeIntegration: false,  // Prevents access to Node.js in web pages
     webviewTag: true,
+    partition: 'persist:main'
     },
   });
 

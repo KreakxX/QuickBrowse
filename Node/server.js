@@ -88,8 +88,6 @@ function youtube_play(ws, message){
 }
 
 function youtube_pause(ws, message){
-      console.log("CALLED PAUSE")
-
   const sessionCode = ws.sessionCode;
     if (!sessionCode || !sessions[sessionCode]) {
       ws.send(JSON.stringify({
@@ -98,6 +96,7 @@ function youtube_pause(ws, message){
       }));
       return;
     } 
+    console.log("CALLED PAUSE")
 
     const pauseMessage = {
       type: "youtube_pause"

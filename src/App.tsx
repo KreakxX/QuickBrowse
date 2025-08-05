@@ -430,8 +430,6 @@ export default function BrowserLayout() {
 
   // Watch Together Logic
   const playvideo = () => {
-    console.log("CALLED");
-
     const iframe = document.getElementById(
       "youtube-iframe"
     ) as HTMLIFrameElement;
@@ -442,7 +440,6 @@ export default function BrowserLayout() {
   };
 
   const pausevideo = () => {
-    console.log("CALLED");
     const iframe = document.getElementById(
       "youtube-iframe"
     ) as HTMLIFrameElement;
@@ -451,36 +448,44 @@ export default function BrowserLayout() {
       "*"
     );
   };
+
   // capturing play and pause
   useEffect(() => {
-    if (!watchTogether) return;
     const handleMessage = (event: any) => {
-      console.log("HERE");
-      if (!event.origin.includes("youtube.com")) return;
       try {
-        const data = JSON.parse(event.data);
-        console.log("IN THE USEEFFECT");
-        if (data.event === "onStateChange") {
-          console.log("STATE CHANGED");
-          if (data.info === 1) {
-            wsRef.current?.send(
-              JSON.stringify({
-                type: "youtube_play",
-              })
-            );
-          } else if (data.info === 2) {
-            wsRef.current?.send(
-              JSON.stringify({
-                type: "youtube_pause",
-              })
-            );
+        let data;
+        if (typeof event.data === "string") {
+          data = JSON.parse(event.data);
+        } else {
+          data = event.data;
+        }
+
+        if (data.event === "onReady") {
+          setupEventListeners();
+        } else if (data.event === "onStateChange") {
+          if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
+            if (data.info === 1) {
+              wsRef.current.send(
+                JSON.stringify({
+                  type: "youtube_play",
+                })
+              );
+            } else if (data.info === 2) {
+              wsRef.current.send(
+                JSON.stringify({
+                  type: "youtube_pause",
+                })
+              );
+            }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log(e);
+      }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [watchTogether]);
+  }, [watchTogether, shared]);
 
   const EnableWatchTogether = () => {
     setWatchTogether(true);
@@ -503,6 +508,54 @@ export default function BrowserLayout() {
         embedUrl: embedURL,
       })
     );
+  };
+
+  const setupEventListeners = () => {
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    if (!iframe) {
+      return;
+    }
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "addEventListener",
+            args: ["onStateChange"],
+          }),
+          "https://www.youtube.com"
+        );
+
+        iframe.contentWindow?.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "getPlayerState",
+            args: [],
+          }),
+          "https://www.youtube.com"
+        );
+      } catch (error) {}
+    }, 1000);
+  };
+
+  const handleIframeLoad = () => {
+    setTimeout(() => {
+      const iframe = document.getElementById(
+        "youtube-iframe"
+      ) as HTMLIFrameElement;
+      if (iframe) {
+        try {
+          iframe.contentWindow?.postMessage(
+            '{"event":"listening","id":"youtube-iframe"}',
+            "*"
+          );
+        } catch (error) {
+          console.log("Error sending listening message:", error);
+        }
+      }
+    }, 1000);
   };
 
   // sending the specific type to the server and it handles it via the MessageHandler and updates makes the client joins the session
@@ -1331,6 +1384,7 @@ export default function BrowserLayout() {
                 src={watchTogetherURL}
                 allow="autoplay; encrypted-media"
                 allowFullScreen
+                onLoad={handleIframeLoad}
                 className="absolute top-0 left-0 w-full h-full"
                 id="youtube-iframe"
               />
