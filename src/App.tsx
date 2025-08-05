@@ -23,10 +23,12 @@ import {
   Scale,
   Scaling,
   Expand,
+  Search,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogClose,
@@ -90,6 +92,7 @@ export default function BrowserLayout() {
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
   const [splitViewURL, setSplitViewURL] = useState<string | null>("");
+  const [addNewTabSearchBar, setAddNewTabSearchBar] = useState<boolean>(false);
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
   >([]);
@@ -848,52 +851,59 @@ export default function BrowserLayout() {
             </div>
             <div className="p-3">
               <div className="relative">
-                <Input
-                  value={currentUrl}
-                  onChange={(e) => setCurrentUrl(e.target.value)}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setTimeout(() => setInputFocused(false), 100)}
-                  onKeyDown={handleKeyDown}
-                  style={{
-                    backgroundColor: activeTheme?.secondary,
-                    borderColor: activeTheme?.secondary,
-                  }}
-                  className=" text-white placeholder-gray-400 h-8 "
-                  placeholder="Enter URL..."
-                />
-                {suggestions.length > 0 && inputFocused && (
-                  <div
-                    style={{
-                      backgroundColor: activeTheme?.secondary,
-                      borderColor: activeTheme?.secondary,
+                <div className="flex items-center gap-3 px-4 border-b border-zinc-700">
+                  <Input
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    value={currentUrl}
+                    onChange={(e) => {
+                      setCurrentUrl(e.target.value);
                     }}
-                    className=" rounded-lg "
-                  >
-                    {suggestions.map((suggestion) => (
-                      <Button
-                        onClick={(e) => {
-                          setUrl(suggestion);
-                          setCurrentUrl(suggestion);
-                        }}
-                        style={{
-                          backgroundColor: activeTheme?.secondary,
-                          borderColor: activeTheme?.secondary,
-                        }}
-                        className=" mt-2 p-2 ml-2 flex"
-                      >
-                        <img
-                          src={new URL(suggestion).origin + "/favicon.ico"}
-                          alt="favicon"
-                          className="w-5 h-5 mr-2  mt-0.5"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
-                        <div className="truncate"> {suggestion} </div>
-                      </Button>
-                    ))}
-                  </div>
-                )}
+                    className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+                    placeholder="Search..."
+                    autoFocus
+                  />
+                </div>
+
+                <div className="max-h-[400px] overflow-y-auto">
+                  {suggestions.length > 0 && inputFocused ? (
+                    <div className="p-2">
+                      {suggestions.map((suggestion, index) => {
+                        const url = new URL(suggestion);
+                        const domain = url.hostname.replace("www.", "");
+                        const serviceName = domain.split(".")[0];
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                            onClick={() => addNewTab(suggestion)}
+                          >
+                            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`${url.origin}/favicon.ico`}
+                                alt={`${serviceName} favicon`}
+                                className="w-5 h-5 rounded-sm"
+                              />
+                              <div className="w-5 h-5 bg-zinc-700 rounded-sm items-center justify-center text-xs text-zinc-400 hidden">
+                                {serviceName.charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white font-medium capitalize text-sm">
+                                {serviceName}
+                              </div>
+                              <div className="text-zinc-400 text-xs truncate">
+                                {suggestion}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
 
                 <div className="flex gap-2 mt-2">
                   <Button
@@ -1075,7 +1085,7 @@ export default function BrowserLayout() {
               <div className="mb-3 ">
                 <Button
                   onClick={() => {
-                    addNewTab(currentUrl);
+                    setAddNewTabSearchBar(true);
                   }}
                   variant="ghost"
                   size="sm"
@@ -1222,6 +1232,7 @@ export default function BrowserLayout() {
                 )}
               </div>
             </div>
+
             <div className="flex justify-between w-[20%]">
               <Dialog>
                 <DialogTrigger asChild>
@@ -1367,6 +1378,77 @@ export default function BrowserLayout() {
                   </div>
                 </DialogContent>
               </Dialog>{" "}
+              <Dialog
+                open={addNewTabSearchBar}
+                onOpenChange={() => {
+                  setAddNewTabSearchBar(false);
+                }}
+              >
+                <DialogContent className="bg-zinc-900 border-zinc-700 max-w-[500px] p-0 gap-0">
+                  <div className="flex items-center gap-3 p-4 border-b border-zinc-700">
+                    <Search className="text-zinc-400 w-5 h-5 flex-shrink-0" />
+                    <Input
+                      value={currentUrl}
+                      onChange={(e) => {
+                        setCurrentUrl(e.target.value);
+                      }}
+                      className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+                      placeholder="Search..."
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {suggestions.length > 0 ? (
+                      <div className="p-2">
+                        {suggestions.map((suggestion, index) => {
+                          const url = new URL(suggestion);
+                          const domain = url.hostname.replace("www.", "");
+                          const serviceName = domain.split(".")[0];
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                              onClick={() => addNewTab(suggestion)}
+                            >
+                              <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                                <img
+                                  src={`${url.origin}/favicon.ico`}
+                                  alt={`${serviceName} favicon`}
+                                  className="w-5 h-5 rounded-sm"
+                                />
+                                <div className="w-5 h-5 bg-zinc-700 rounded-sm items-center justify-center text-xs text-zinc-400 hidden">
+                                  {serviceName.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white font-medium capitalize text-sm">
+                                  {serviceName}
+                                </div>
+                                <div className="text-zinc-400 text-xs truncate">
+                                  {suggestion}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 px-4">
+                        <Search className="w-12 h-12 text-zinc-600 mb-3" />
+                        <h3 className="text-zinc-400 font-medium text-sm">
+                          No Results Found
+                        </h3>
+                        <p className="text-zinc-500 text-xs mt-1 text-center">
+                          Try searching for a different term
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
               {shared ? (
                 <Dialog>
                   <form>
@@ -1516,7 +1598,7 @@ export default function BrowserLayout() {
             {/* refs machen für Performacne aber das ist erster Ansatz 
              Page Title machen für besseres Browsing Erlebnis
              just showing the ref all time, but adding the new Webview as second resizePanel
-             
+             Hover UI and New Tab adding
              */}
             {splitViewURL ? (
               <ResizablePanelGroup

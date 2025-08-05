@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session, nativeImage  } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
@@ -10,11 +10,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createWindow() {
+    const transparentIcon = nativeImage.createEmpty();
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-icon: path.join(__dirname, '..', 'src', 'assets', 'Browser.ico'),
-    title: "Quick Browse",
+    icon: transparentIcon,
+    title: "",
+    // frame: false, // Remove the default frame to create custom titlebar
+    // titleBarStyle: 'hidden',
     webPreferences: {
     preload: path.join(__dirname, 'preload.js'),
     contextIsolation: true,  // Isolates renderer from preload
