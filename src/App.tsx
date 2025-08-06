@@ -1,4 +1,4 @@
-import { act, useEffect, useRef, useState } from "react";
+import { act, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -91,7 +91,6 @@ export default function BrowserLayout() {
   const [sessionCode, setSessionCode] = useState<string>("");
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
-  const [splitViewURL, setSplitViewURL] = useState<string | null>("");
   const [addNewTabSearchBar, setAddNewTabSearchBar] = useState<boolean>(false);
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
@@ -146,6 +145,7 @@ export default function BrowserLayout() {
   ];
 
   const activeTabIdRef = useRef(activeTabId);
+  const [splitViewTabId, setSplitViewTabId] = useState<number | null>(null);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
     url: string;
@@ -158,8 +158,6 @@ export default function BrowserLayout() {
     title?: string;
     favIcon?: string;
   }
-
-  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   function extractYouTubeVideoID(url: string): string | null {
     try {
@@ -197,18 +195,15 @@ export default function BrowserLayout() {
     },
   ]);
 
-  useEffect(() => {
-    if (!currentUrl.trim()) {
-      setSuggestions([]);
-      return;
-    }
-    const matches = history
+  const suggestions = useMemo(() => {
+    if (!currentUrl.trim()) return [];
+    if (!currentUrl.trim() || currentUrl.length < 3) return [];
+    return history
       .filter((item) =>
         item.url.toLowerCase().includes(currentUrl.toLowerCase())
       )
-      .map((item) => item.url)
-      .slice(0, 5);
-    setSuggestions(matches);
+      .slice(0, 5)
+      .map((item) => item.url);
   }, [currentUrl, history]);
 
   useEffect(() => {
@@ -258,20 +253,24 @@ export default function BrowserLayout() {
     setHistory(fixedHistory);
   };
   // gucken was man alles easy sharen kann
+  // Fixed useEffect for handling WebView events
   useEffect(() => {
     const handleWebViewEvents = () => {
       const activeWebView = webviewRefs.current[activeTabId];
       if (!activeWebView) return;
 
-      const handleNavigate = (event: any) => {
-        console.log("Navigation detected:", event.url); // Add this line
+      const handleNavigate = (event: any, tabId: number) => {
+        console.log("Navigation detected:", event.url, "for tab:", tabId);
         const newUrl = event.url;
 
-        setCurrentUrl(newUrl);
-        setUrl(newUrl);
+        if (tabId === activeTabId) {
+          setCurrentUrl(newUrl);
+          setUrl(newUrl);
+        }
+
         setTabs((prev) =>
           prev.map((tab) =>
-            tab.id === activeTabId
+            tab.id === tabId
               ? {
                   ...tab,
                   url: newUrl,
@@ -290,7 +289,7 @@ export default function BrowserLayout() {
           wsRef.current.send(
             JSON.stringify({
               type: "url_changed",
-              tabId: activeTabId,
+              tabId: tabId,
               newUrl: newUrl,
               favicon: new URL(newUrl).origin + "/favicon.ico",
             })
@@ -298,10 +297,10 @@ export default function BrowserLayout() {
         }
       };
 
-      const handleTitleUpdate = (event: any) => {
+      const handleTitleUpdate = (event: any, tabId: number) => {
         setTabs((prev) =>
           prev.map((tab) =>
-            tab.id === activeTabId
+            tab.id === tabId
               ? {
                   ...tab,
                   title: event.title || tab.title,
@@ -310,21 +309,80 @@ export default function BrowserLayout() {
           )
         );
       };
-      activeWebView.addEventListener("page-title-updated", handleTitleUpdate);
-      activeWebView.addEventListener("did-navigate", handleNavigate);
-      activeWebView.addEventListener("did-navigate-in-page", handleNavigate);
 
-      // Cleanup function to remove event listeners
+      // Event Listener für aktiven Tab
+      const activeTabHandleNavigate = (event: any) =>
+        handleNavigate(event, activeTabId);
+      const activeTabHandleTitleUpdate = (event: any) =>
+        handleTitleUpdate(event, activeTabId);
+
+      activeWebView.addEventListener(
+        "page-title-updated",
+        activeTabHandleTitleUpdate
+      );
+      activeWebView.addEventListener("did-navigate", activeTabHandleNavigate);
+      activeWebView.addEventListener(
+        "did-navigate-in-page",
+        activeTabHandleNavigate
+      );
+      let splitWebView = null;
+      let splitTabHandleNavigate = null;
+      let splitTabHandleTitleUpdate = null;
+
+      if (splitViewTabId) {
+        let splitTab = tabs.find((tab) => tab.id === splitViewTabId);
+        splitWebView = splitTab ? webviewRefs.current[splitTab.id] : null;
+
+        if (splitWebView && splitTab) {
+          splitTabHandleNavigate = (event: any) =>
+            handleNavigate(event, splitTab.id);
+          splitTabHandleTitleUpdate = (event: any) =>
+            handleTitleUpdate(event, splitTab.id);
+
+          splitWebView.addEventListener(
+            "page-title-updated",
+            splitTabHandleTitleUpdate
+          );
+          splitWebView.addEventListener("did-navigate", splitTabHandleNavigate);
+          splitWebView.addEventListener(
+            "did-navigate-in-page",
+            splitTabHandleNavigate
+          );
+        }
+      }
+
       return () => {
-        activeWebView.removeEventListener("did-navigate", handleNavigate);
         activeWebView.removeEventListener(
           "page-title-updated",
-          handleTitleUpdate
+          activeTabHandleTitleUpdate
+        );
+        activeWebView.removeEventListener(
+          "did-navigate",
+          activeTabHandleNavigate
         );
         activeWebView.removeEventListener(
           "did-navigate-in-page",
-          handleNavigate
+          activeTabHandleNavigate
         );
+
+        if (
+          splitWebView &&
+          splitTabHandleNavigate &&
+          splitTabHandleTitleUpdate
+        ) {
+          splitWebView.removeEventListener(
+            "page-title-updated",
+            splitTabHandleTitleUpdate
+          );
+          splitWebView.removeEventListener(
+            "did-navigate",
+            splitTabHandleNavigate
+          );
+          splitWebView.removeEventListener(
+            "did-navigate-in-page",
+            splitTabHandleNavigate
+          );
+        }
       };
     };
 
@@ -332,7 +390,7 @@ export default function BrowserLayout() {
     return () => {
       if (cleanup) cleanup();
     };
-  }, [activeTabId, shared]);
+  }, [activeTabId, shared, splitViewTabId, tabs]);
 
   // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
@@ -851,7 +909,10 @@ export default function BrowserLayout() {
             </div>
             <div className="p-3">
               <div className="relative">
-                <div className="flex items-center gap-3 px-4 border-b border-zinc-700">
+                <div
+                  style={{ borderColor: activeTheme.secondary }}
+                  className="flex items-center gap-3 px-4 border-b "
+                >
                   <Input
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
@@ -1098,7 +1159,7 @@ export default function BrowserLayout() {
 
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
-                  tab.id == activeTabId && splitViewURL ? (
+                  tab.id == activeTabId && splitViewTabId ? (
                     <div key={tab.id} className="mb-2 relative group">
                       <button
                         onClick={() => switchToTab(tab.id)}
@@ -1121,7 +1182,7 @@ export default function BrowserLayout() {
                             }
                           />
                         )}
-                        <img
+                        {/* <img
                           src={
                             splitViewURL + "/favicon.ico" || "/placeholder.svg"
                           }
@@ -1130,7 +1191,7 @@ export default function BrowserLayout() {
                           onError={(e) =>
                             (e.currentTarget.style.display = "none")
                           }
-                        />
+                        /> */}
 
                         <div className="flex items-center gap-1">
                           <Button
@@ -1146,10 +1207,13 @@ export default function BrowserLayout() {
                               e.stopPropagation();
 
                               if (activeTabId !== tab.id) {
-                                if (splitViewURL && splitViewURL === tab.url) {
-                                  setSplitViewURL(null);
+                                if (
+                                  splitViewTabId &&
+                                  splitViewTabId === tab.id
+                                ) {
+                                  setSplitViewTabId(null);
                                 } else {
-                                  setSplitViewURL(tab.url);
+                                  setSplitViewTabId(tab.id);
                                 }
                               }
                             }}
@@ -1157,7 +1221,7 @@ export default function BrowserLayout() {
                           >
                             <Scaling
                               className={`${
-                                splitViewURL === tab.url &&
+                                splitViewTabId === tab.id &&
                                 activeTabId !== tab.id
                                   ? "text-green-500"
                                   : "text-white"
@@ -1207,10 +1271,13 @@ export default function BrowserLayout() {
                               e.stopPropagation();
 
                               if (activeTabId !== tab.id) {
-                                if (splitViewURL && splitViewURL === tab.url) {
-                                  setSplitViewURL(null);
+                                if (
+                                  splitViewTabId &&
+                                  splitViewTabId === tab.id
+                                ) {
+                                  setSplitViewTabId(null);
                                 } else {
-                                  setSplitViewURL(tab.url);
+                                  setSplitViewTabId(tab.id);
                                 }
                               }
                             }}
@@ -1218,7 +1285,7 @@ export default function BrowserLayout() {
                           >
                             <Scaling
                               className={`${
-                                splitViewURL === tab.url &&
+                                splitViewTabId === tab.id &&
                                 activeTabId !== tab.id
                                   ? "text-green-500"
                                   : "text-white"
@@ -1600,7 +1667,7 @@ export default function BrowserLayout() {
              just showing the ref all time, but adding the new Webview as second resizePanel
              Hover UI and New Tab adding
              */}
-            {splitViewURL ? (
+            {!watchTogether ? (
               <ResizablePanelGroup
                 direction="horizontal"
                 className="w-full h-full"
@@ -1632,39 +1699,36 @@ export default function BrowserLayout() {
                     setIsResizing(isDragging);
                   }}
                 />
-                <ResizablePanel>
-                  <webview
-                    src={splitViewURL}
-                    className={` w-full h-full z-10`}
-                    partition="persist:QuickBrowse"
-                    allowpopups={false}
-                    style={{
-                      pointerEvents:
-                        shareCursor || isResizing ? "none" : "auto",
-                    }}
-                    webpreferences="contextIsolation,sandbox"
-                  />
-                </ResizablePanel>
+                {splitViewTabId &&
+                  (() => {
+                    const tab = tabs.find((tab) => tab.id === splitViewTabId);
+                    console.log(tab);
+
+                    if (!tab) return;
+                    console.log(webviewRefs.current[tab.id]);
+
+                    return (
+                      <ResizablePanel>
+                        <webview
+                          ref={(el) => {
+                            webviewRefs.current[tab.id] = el;
+                          }}
+                          src={tab.url}
+                          className={`z-10 w-full h-full `}
+                          partition="persist:QuickBrowse"
+                          allowpopups={false}
+                          style={{
+                            pointerEvents:
+                              shareCursor || isResizing ? "none" : "auto",
+                          }}
+                          webpreferences="contextIsolation,sandbox"
+                        />
+                      </ResizablePanel>
+                    );
+                  })()}
               </ResizablePanelGroup>
-            ) : !watchTogether ? (
-              tabs.map((tab) => (
-                <webview
-                  ref={(el) => {
-                    webviewRefs.current[tab.id] = el;
-                  }}
-                  src={tab.id === activeTabId ? url : tab.url}
-                  className={`absolute top-0 left-0 w-full h-full z-10 ${
-                    tab.id === activeTabId ? "flex" : "hidden"
-                  }`}
-                  partition="persist:QuickBrowse"
-                  allowpopups={false}
-                  style={{
-                    pointerEvents: shareCursor ? "none" : "auto",
-                  }}
-                  webpreferences="contextIsolation,sandbox"
-                />
-              ))
-            ) : (
+            ) : null}
+            {watchTogether ? (
               <iframe
                 src={watchTogetherURL}
                 allow="autoplay; encrypted-media"
@@ -1673,7 +1737,7 @@ export default function BrowserLayout() {
                 className="absolute top-0 left-0 w-full h-full"
                 id="youtube-iframe"
               />
-            )}
+            ) : null}
           </div>
         </div>
       </div>
