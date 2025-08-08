@@ -91,7 +91,7 @@ export default function BrowserLayout() {
   const [sessionCode, setSessionCode] = useState<string>("");
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
-  const [splitViewURL, setSplitViewURL] = useState<string | null>("");
+  const [splitViewId, setSplitViewId] = useState<number | null>(null);
   const [addNewTabSearchBar, setAddNewTabSearchBar] = useState<boolean>(false);
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
@@ -258,15 +258,18 @@ export default function BrowserLayout() {
       const activeWebView = webviewRefs.current[activeTabId];
       if (!activeWebView) return;
 
-      const handleNavigate = (event: any) => {
+      const handleNavigate = (event: any, id: number) => {
         console.log("Navigation detected:", event.url); // Add this line
         const newUrl = event.url;
 
-        setCurrentUrl(newUrl);
-        setUrl(newUrl);
+        if (id === activeTabId) {
+          setCurrentUrl(newUrl);
+          setUrl(newUrl);
+        }
+
         setTabs((prev) =>
           prev.map((tab) =>
-            tab.id === activeTabId
+            tab.id === id
               ? {
                   ...tab,
                   url: newUrl,
@@ -285,7 +288,7 @@ export default function BrowserLayout() {
           wsRef.current.send(
             JSON.stringify({
               type: "url_changed",
-              tabId: activeTabId,
+              tabId: id,
               newUrl: newUrl,
               favicon: new URL(newUrl).origin + "/favicon.ico",
             })
@@ -305,20 +308,52 @@ export default function BrowserLayout() {
           )
         );
       };
+      const handleNavigateActive = (e: any) => handleNavigate(e, activeTabId);
+      let splitNavigateHandler: ((e: any) => void) | null = null;
+      if (splitViewId) {
+        const splitViewWebView = webviewRefs.current[splitViewId];
+        if (splitViewWebView) {
+          splitNavigateHandler = (e: any) => handleNavigate(e, splitViewId);
+          splitViewWebView.addEventListener(
+            "did-navigate",
+            splitNavigateHandler
+          );
+          splitViewWebView.addEventListener(
+            "did-navigate-in-page",
+            splitNavigateHandler
+          );
+        }
+      }
       activeWebView.addEventListener("page-title-updated", handleTitleUpdate);
-      activeWebView.addEventListener("did-navigate", handleNavigate);
-      activeWebView.addEventListener("did-navigate-in-page", handleNavigate);
+      activeWebView.addEventListener("did-navigate", handleNavigateActive);
+      activeWebView.addEventListener(
+        "did-navigate-in-page",
+        handleNavigateActive
+      );
 
       // Cleanup function to remove event listeners
       return () => {
-        activeWebView.removeEventListener("did-navigate", handleNavigate);
+        if (splitViewId && splitNavigateHandler) {
+          const splitViewWebView = webviewRefs.current[splitViewId];
+          if (splitViewWebView) {
+            splitViewWebView.removeEventListener(
+              "did-navigate",
+              splitNavigateHandler
+            );
+            splitViewWebView.removeEventListener(
+              "did-navigate-in-page",
+              splitNavigateHandler
+            );
+          }
+        }
+        activeWebView.removeEventListener("did-navigate", handleNavigateActive);
         activeWebView.removeEventListener(
           "page-title-updated",
           handleTitleUpdate
         );
         activeWebView.removeEventListener(
           "did-navigate-in-page",
-          handleNavigate
+          handleNavigateActive
         );
       };
     };
@@ -327,7 +362,7 @@ export default function BrowserLayout() {
     return () => {
       if (cleanup) cleanup();
     };
-  }, [activeTabId, shared]);
+  }, [activeTabId, splitViewId, shared]);
 
   // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
@@ -1096,7 +1131,7 @@ export default function BrowserLayout() {
 
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
-                  tab.id == activeTabId && splitViewURL ? (
+                  tab.id == activeTabId && splitViewId ? (
                     <div key={tab.id} className="mb-2 relative group">
                       <button
                         onClick={() => switchToTab(tab.id)}
@@ -1119,16 +1154,20 @@ export default function BrowserLayout() {
                             }
                           />
                         )}
-                        <img
-                          src={
-                            splitViewURL + "/favicon.ico" || "/placeholder.svg"
-                          }
-                          alt="favicon"
-                          className="w-5 h-5 mr-2"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
+                        {(() => {
+                          const tab = tabs.find((tab) => tab.id == splitViewId);
+                          if (tab == null) return;
+                          return (
+                            <img
+                              src={tab.favIcon || "/placeholder.svg"}
+                              alt="favicon"
+                              className="w-5 h-5 mr-2"
+                              onError={(e) =>
+                                (e.currentTarget.style.display = "none")
+                              }
+                            />
+                          );
+                        })()}
 
                         <div className="flex items-center gap-1">
                           <Button
@@ -1144,10 +1183,10 @@ export default function BrowserLayout() {
                               e.stopPropagation();
 
                               if (activeTabId !== tab.id) {
-                                if (splitViewURL && splitViewURL === tab.url) {
-                                  setSplitViewURL(null);
+                                if (splitViewId && splitViewId === tab.id) {
+                                  setSplitViewId(null);
                                 } else {
-                                  setSplitViewURL(tab.url);
+                                  setSplitViewId(tab.id);
                                 }
                               }
                             }}
@@ -1155,8 +1194,7 @@ export default function BrowserLayout() {
                           >
                             <Scaling
                               className={`${
-                                splitViewURL === tab.url &&
-                                activeTabId !== tab.id
+                                splitViewId === tab.id && activeTabId !== tab.id
                                   ? "text-green-500"
                                   : "text-white"
                               }`}
@@ -1205,10 +1243,10 @@ export default function BrowserLayout() {
                               e.stopPropagation();
 
                               if (activeTabId !== tab.id) {
-                                if (splitViewURL && splitViewURL === tab.url) {
-                                  setSplitViewURL(null);
+                                if (splitViewId && splitViewId === tab.id) {
+                                  setSplitViewId(null);
                                 } else {
-                                  setSplitViewURL(tab.url);
+                                  setSplitViewId(tab.id);
                                 }
                               }
                             }}
@@ -1216,8 +1254,7 @@ export default function BrowserLayout() {
                           >
                             <Scaling
                               className={`${
-                                splitViewURL === tab.url &&
-                                activeTabId !== tab.id
+                                splitViewId === tab.id && activeTabId !== tab.id
                                   ? "text-green-500"
                                   : "text-white"
                               }`}
@@ -1630,9 +1667,9 @@ export default function BrowserLayout() {
                     setIsResizing(isDragging);
                   }}
                 />
-                {splitViewURL &&
+                {splitViewId &&
                   (() => {
-                    const tab = tabs.find((tab) => tab.url === splitViewURL);
+                    const tab = tabs.find((tab) => tab.id === splitViewId);
                     console.log(tab);
                     if (!tab) return;
                     return (
@@ -1641,7 +1678,7 @@ export default function BrowserLayout() {
                           ref={(el) => {
                             webviewRefs.current[tab.id] = el;
                           }}
-                          src={tab.id === activeTabId ? url : tab.url}
+                          src={tab.url}
                           className={`z-10 w-full h-full `}
                           partition="persist:QuickBrowse"
                           allowpopups={false}
