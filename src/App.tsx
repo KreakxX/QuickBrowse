@@ -1131,7 +1131,7 @@ export default function BrowserLayout() {
 
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
-                  tab.id == activeTabId && splitViewId ? (
+                  tab.id == activeTabId && splitViewId !== null ? (
                     <div key={tab.id} className="mb-2 relative group">
                       <button
                         onClick={() => switchToTab(tab.id)}
@@ -1181,9 +1181,11 @@ export default function BrowserLayout() {
                           <Button
                             onClick={(e) => {
                               e.stopPropagation();
-
                               if (activeTabId !== tab.id) {
-                                if (splitViewId && splitViewId === tab.id) {
+                                if (
+                                  splitViewId !== null &&
+                                  splitViewId === tab.id
+                                ) {
                                   setSplitViewId(null);
                                 } else {
                                   setSplitViewId(tab.id);
@@ -1243,7 +1245,10 @@ export default function BrowserLayout() {
                               e.stopPropagation();
 
                               if (activeTabId !== tab.id) {
-                                if (splitViewId && splitViewId === tab.id) {
+                                if (
+                                  splitViewId !== null &&
+                                  splitViewId === tab.id
+                                ) {
                                   setSplitViewId(null);
                                 } else {
                                   setSplitViewId(tab.id);
@@ -1667,11 +1672,13 @@ export default function BrowserLayout() {
                     setIsResizing(isDragging);
                   }}
                 />
-                {splitViewId &&
+                {splitViewId != null &&
                   (() => {
                     const tab = tabs.find((tab) => tab.id === splitViewId);
                     console.log(tab);
-                    if (!tab) return;
+                    if (!tab) {
+                      return;
+                    }
                     return (
                       <ResizablePanel>
                         <webview
