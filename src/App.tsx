@@ -202,7 +202,7 @@ export default function BrowserLayout() {
       .filter((item) =>
         item.url.toLowerCase().includes(currentUrl.toLowerCase())
       )
-      .slice(0, 5)
+      .slice(0, 4)
       .map((item) => item.url);
   }, [currentUrl, history]);
 
@@ -1476,15 +1476,35 @@ export default function BrowserLayout() {
                         })}
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 px-4">
-                        <Search className="w-12 h-12 text-zinc-600 mb-3" />
-                        <h3 className="text-zinc-400 font-medium text-sm">
-                          No Results Found
-                        </h3>
-                        <p className="text-zinc-500 text-xs mt-1 text-center">
-                          Try searching for a different term
-                        </p>
-                      </div>
+                      <>
+                        {currentUrl.length > 0 ? (
+                          <div className="w-full px-3 overflow-hidden">
+                            <Button
+                              onClick={() => {
+                                addNewTab(
+                                  `https://www.google.com/search?q=${encodeURIComponent(
+                                    currentUrl
+                                  )}`
+                                );
+                              }}
+                              className="bg-zinc-600 hover:bg-zinc-600 p-6 rounded-lg mt-2 mb-2 w-full truncate"
+                            >
+                              <Search></Search>
+                              {currentUrl} — Search with Google
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 px-4">
+                            <Search className="w-12 h-12 text-zinc-600 mb-3" />
+                            <h3 className="text-zinc-400 font-medium text-sm">
+                              No Results Found
+                            </h3>
+                            <p className="text-zinc-500 text-xs mt-1 text-center">
+                              Try searching for a different term
+                            </p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </DialogContent>
