@@ -1,46 +1,32 @@
-import { act, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
   Plus,
-  ChevronsLeftRight,
   X,
   MessageCircle,
-  ArrowBigLeft,
   ArrowBigRight,
-  Bolt,
   Link,
   MousePointer2,
-  Download,
   History,
-  Navigation,
   Palette,
   Youtube,
   Play,
-  Settings,
-  LucideView,
-  Scale,
   Scaling,
-  Expand,
   Search,
-  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "./components/ui/scroll-area";
 import {
@@ -69,7 +55,7 @@ declare global {
 export default function BrowserLayout() {
   const [url, setUrl] = useState("https://google.com/");
   const [currentUrl, setCurrentUrl] = useState<string>("https://google.com/");
-  const [showSidebar, setShowSidebar] = useState<boolean>(true);
+  const [showSidebar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [activeTabId, setActiveTabId] = useState<number>(0);
@@ -98,7 +84,7 @@ export default function BrowserLayout() {
   >([]);
   const [xSession, setXSession] = useState<number>(0);
   const [ySession, setYSession] = useState<number>(0);
-  const [savedTabs, setSavedTabs] = useState<savedTab[]>([
+  const [savedTabs] = useState<savedTab[]>([
     { url: "https://youtube.com", favIcon: "https://youtube.com/favicon.ico" },
     { url: "https://github.com", favIcon: "https://github.com/favicon.ico" },
     { url: "https://chatgpt.com", favIcon: "https://chatgpt.com/favicon.ico" },
@@ -510,36 +496,36 @@ export default function BrowserLayout() {
     );
   };
 
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  // own algorythm for checking when calling skipping etc
+  // const [currentTime, setCurrentTime] = useState<number>(0);
+  // // own algorythm for checking when calling skipping etc
 
-  const skipForward = () => {
-    const iframe = document.getElementById(
-      "youtube-iframe"
-    ) as HTMLIFrameElement;
-    iframe.contentWindow?.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: "seekTo",
-        args: [currentTime + 10, true],
-      }),
-      "https://www.youtube.com"
-    );
-  };
+  // const skipForward = () => {
+  //   const iframe = document.getElementById(
+  //     "youtube-iframe"
+  //   ) as HTMLIFrameElement;
+  //   iframe.contentWindow?.postMessage(
+  //     JSON.stringify({
+  //       event: "command",
+  //       func: "seekTo",
+  //       args: [currentTime + 10, true],
+  //     }),
+  //     "https://www.youtube.com"
+  //   );
+  // };
 
-  const skipBackward = () => {
-    const iframe = document.getElementById(
-      "youtube-iframe"
-    ) as HTMLIFrameElement;
-    iframe.contentWindow?.postMessage(
-      JSON.stringify({
-        event: "command",
-        func: "seekTo",
-        args: [Math.max(0, currentTime - 10), true],
-      }),
-      "https://www.youtube.com"
-    );
-  };
+  // const skipBackward = () => {
+  //   const iframe = document.getElementById(
+  //     "youtube-iframe"
+  //   ) as HTMLIFrameElement;
+  //   iframe.contentWindow?.postMessage(
+  //     JSON.stringify({
+  //       event: "command",
+  //       func: "seekTo",
+  //       args: [Math.max(0, currentTime - 10), true],
+  //     }),
+  //     "https://www.youtube.com"
+  //   );
+  // };
 
   // capturing play and pause
   useEffect(() => {
@@ -686,19 +672,19 @@ export default function BrowserLayout() {
     setMessageInput("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      setUrl(currentUrl);
+  // const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (e.key === "Enter") {
+  //     setUrl(currentUrl);
 
-      setTabs((prevTabs) =>
-        prevTabs.map((tab) =>
-          tab.id === activeTabId
-            ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
-            : tab
-        )
-      );
-    }
-  };
+  //     setTabs((prevTabs) =>
+  //       prevTabs.map((tab) =>
+  //         tab.id === activeTabId
+  //           ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
+  //           : tab
+  //       )
+  //     );
+  //   }
+  // };
 
   const switchToTab = (tabId: number) => {
     setActiveTabId(tabId);
