@@ -496,36 +496,79 @@ export default function BrowserLayout() {
     );
   };
 
-  // const [currentTime, setCurrentTime] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
+  const [skipped, setSkipped] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (currentTime - 10 > oldCurrentTime) {
+      setSkipped(true);
+    } else {
+      setSkipped(false);
+    }
+    setOldCurrentTime(currentTime);
+  }, [currentTime]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const iframe = document.getElementById(
+        "youtube-iframe"
+      ) as HTMLIFrameElement;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            event: "command",
+            func: "getCurrentTime",
+            args: [],
+          }),
+          "https://www.youtube.com"
+        );
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!skipped) return;
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+
+    wsRef.current.send(
+      JSON.stringify({ type: "skipped_forward", time: currentTime })
+    );
+  }, [skipped]);
   // // own algorythm for checking when calling skipping etc
 
-  // const skipForward = () => {
-  //   const iframe = document.getElementById(
-  //     "youtube-iframe"
-  //   ) as HTMLIFrameElement;
-  //   iframe.contentWindow?.postMessage(
-  //     JSON.stringify({
-  //       event: "command",
-  //       func: "seekTo",
-  //       args: [currentTime + 10, true],
-  //     }),
-  //     "https://www.youtube.com"
-  //   );
-  // };
+  const skipForward = () => {
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({
+        event: "command",
+        func: "seekTo",
+        args: [currentTime + 10, true],
+      }),
+      "https://www.youtube.com"
+    );
+  };
 
-  // const skipBackward = () => {
-  //   const iframe = document.getElementById(
-  //     "youtube-iframe"
-  //   ) as HTMLIFrameElement;
-  //   iframe.contentWindow?.postMessage(
-  //     JSON.stringify({
-  //       event: "command",
-  //       func: "seekTo",
-  //       args: [Math.max(0, currentTime - 10), true],
-  //     }),
-  //     "https://www.youtube.com"
-  //   );
-  // };
+  const skipBackward = () => {
+    const iframe = document.getElementById(
+      "youtube-iframe"
+    ) as HTMLIFrameElement;
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({
+        event: "command",
+        func: "seekTo",
+        args: [Math.max(0, currentTime - 10), true],
+      }),
+      "https://www.youtube.com"
+    );
+  };
 
   // capturing play and pause
   useEffect(() => {
@@ -554,6 +597,12 @@ export default function BrowserLayout() {
                   type: "youtube_pause",
                 })
               );
+            } else if (
+              data.event === "infoDelivery" &&
+              data.info &&
+              typeof data.info === "number"
+            ) {
+              setCurrentTime(data.info);
             }
           }
         }
