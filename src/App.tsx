@@ -426,6 +426,9 @@ export default function BrowserLayout() {
       case "skipped_forward":
         skipForward(data.time);
         break;
+      case "skipped_backward":
+        skipBackward(data.time);
+        break;
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
@@ -502,10 +505,18 @@ export default function BrowserLayout() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
   const [skipped, setSkipped] = useState<boolean>(false);
+  const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
+  const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
 
   useEffect(() => {
     if (currentTime - 5 > oldCurrentTime) {
       setSkipped(true);
+      setSkipForwardsbool(true);
+      setSkipBackwardsbool(false);
+    } else if (currentTime + 3 < oldCurrentTime) {
+      setSkipped(true);
+      setSkipBackwardsbool(true);
+      setSkipForwardsbool(false);
     } else {
       setSkipped(false);
     }
@@ -528,7 +539,7 @@ export default function BrowserLayout() {
             "https://www.youtube.com"
           );
         }
-      }, 1000);
+      }, 500);
       return () => clearInterval(interval);
     }
   }, [shared]);
@@ -542,9 +553,15 @@ export default function BrowserLayout() {
     }
 
     if (shared) {
-      wsRef.current.send(
-        JSON.stringify({ type: "skipped_forward", time: currentTime })
-      );
+      if (skipForwardbool) {
+        wsRef.current.send(
+          JSON.stringify({ type: "skipped_forward", time: currentTime })
+        );
+      } else if (skipBackwardsbool) {
+        wsRef.current.send(
+          JSON.stringify({ type: "skipped_backward", time: currentTime })
+        );
+      }
     }
   }, [skipped]);
 
@@ -563,7 +580,8 @@ export default function BrowserLayout() {
     );
   };
 
-  const skipBackward = () => {
+  const skipBackward = (time: number) => {
+    const difference = currentTime - time;
     const iframe = document.getElementById(
       "youtube-iframe"
     ) as HTMLIFrameElement;
@@ -571,7 +589,7 @@ export default function BrowserLayout() {
       JSON.stringify({
         event: "command",
         func: "seekTo",
-        args: [Math.max(0, currentTime - 10), true],
+        args: [Math.max(0, currentTime - difference), true],
       }),
       "https://www.youtube.com"
     );

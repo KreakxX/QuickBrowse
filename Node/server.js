@@ -53,7 +53,12 @@ wss.on('connection', (ws) => {
         youtube_pause(ws,message);
         break;
       case 'skipped_forward':
-      youtube_skipped_forward(ws,message)
+        youtube_skipped_forward(ws,message)
+        break;
+      case 'skipped_backward':
+        youtube_skipped_backward(ws,message)
+        break;
+      
     }
   });
 
@@ -71,7 +76,6 @@ wss.on('connection', (ws) => {
 });
 
 function youtube_skipped_forward(ws,message){
-  console.log("CALLED SKIPP")
     const sessionCode = ws.sessionCode;
     if (!sessionCode || !sessions[sessionCode]) {
       ws.send(JSON.stringify({
@@ -83,6 +87,24 @@ function youtube_skipped_forward(ws,message){
 
     const skippedMessage = {
       type: "skipped_forward",
+      time: message.time
+    }
+
+    broadcastToSession(sessionCode,skippedMessage,ws)
+}
+
+function youtube_skipped_backward(ws,message){
+   const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+
+    const skippedMessage = {
+      type: "skipped_backward",
       time: message.time
     }
 
