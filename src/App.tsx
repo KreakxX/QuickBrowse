@@ -504,7 +504,7 @@ export default function BrowserLayout() {
   const [skipped, setSkipped] = useState<boolean>(false);
 
   useEffect(() => {
-    if (currentTime - 10 > oldCurrentTime) {
+    if (currentTime - 5 > oldCurrentTime) {
       setSkipped(true);
     } else {
       setSkipped(false);
@@ -513,25 +513,25 @@ export default function BrowserLayout() {
   }, [currentTime]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Called every 5s");
-      const iframe = document.getElementById(
-        "youtube-iframe"
-      ) as HTMLIFrameElement;
-      if (iframe && iframe.contentWindow) {
-        console.log("In Iframe");
-        iframe.contentWindow.postMessage(
-          JSON.stringify({
-            event: "command",
-            func: "getCurrentTime",
-            args: [],
-          }),
-          "https://www.youtube.com"
-        );
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    if (shared) {
+      const interval = setInterval(() => {
+        const iframe = document.getElementById(
+          "youtube-iframe"
+        ) as HTMLIFrameElement;
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({
+              event: "command",
+              func: "getCurrentTime",
+              args: [],
+            }),
+            "https://www.youtube.com"
+          );
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [shared]);
 
   useEffect(() => {
     if (!skipped) return;
@@ -608,6 +608,8 @@ export default function BrowserLayout() {
           }
         } else if (data.event === "infoDelivery" && data.info) {
           setCurrentTime(data.info.currentTime);
+        } else {
+          console.log("Unknown event:", data.event, data);
         }
       } catch (e) {
         console.log(e);
