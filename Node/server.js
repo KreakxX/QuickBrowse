@@ -52,6 +52,8 @@ wss.on('connection', (ws) => {
       case 'youtube_pause':
         youtube_pause(ws,message);
         break;
+      case 'skipped_forward':
+      youtube_skipped_forward(ws,message)
     }
   });
 
@@ -67,6 +69,26 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+function youtube_skipped_forward(ws,message){
+  console.log("CALLED SKIPP")
+    const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+
+    const skippedMessage = {
+      type: "skipped_forward",
+      time: message.time
+    }
+
+    broadcastToSession(sessionCode,skippedMessage,ws)
+}
+
 
 
 function youtube_play(ws, message){

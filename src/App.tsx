@@ -423,6 +423,9 @@ export default function BrowserLayout() {
       case "youtube_pause":
         pausevideo();
         break;
+      case "skipped_forward":
+        skipForward(data.time);
+        break;
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
@@ -511,10 +514,12 @@ export default function BrowserLayout() {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log("Called every 5s");
       const iframe = document.getElementById(
         "youtube-iframe"
       ) as HTMLIFrameElement;
       if (iframe && iframe.contentWindow) {
+        console.log("In Iframe");
         iframe.contentWindow.postMessage(
           JSON.stringify({
             event: "command",
@@ -536,13 +541,15 @@ export default function BrowserLayout() {
       return;
     }
 
-    wsRef.current.send(
-      JSON.stringify({ type: "skipped_forward", time: currentTime })
-    );
+    if (shared) {
+      wsRef.current.send(
+        JSON.stringify({ type: "skipped_forward", time: currentTime })
+      );
+    }
   }, [skipped]);
-  // // own algorythm for checking when calling skipping etc
 
-  const skipForward = () => {
+  const skipForward = (time: number) => {
+    const difference = time - currentTime;
     const iframe = document.getElementById(
       "youtube-iframe"
     ) as HTMLIFrameElement;
@@ -550,7 +557,7 @@ export default function BrowserLayout() {
       JSON.stringify({
         event: "command",
         func: "seekTo",
-        args: [currentTime + 10, true],
+        args: [currentTime + difference, true],
       }),
       "https://www.youtube.com"
     );
@@ -597,14 +604,10 @@ export default function BrowserLayout() {
                   type: "youtube_pause",
                 })
               );
-            } else if (
-              data.event === "infoDelivery" &&
-              data.info &&
-              typeof data.info === "number"
-            ) {
-              setCurrentTime(data.info);
             }
           }
+        } else if (data.event === "infoDelivery" && data.info) {
+          setCurrentTime(data.info.currentTime);
         }
       } catch (e) {
         console.log(e);
@@ -1485,7 +1488,10 @@ export default function BrowserLayout() {
                             <div
                               key={index}
                               className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
-                              onClick={() => addNewTab(suggestion)}
+                              onClick={() => {
+                                addNewTab(suggestion);
+                                setAddNewTabSearchBar(false);
+                              }}
                             >
                               <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
                                 <img
@@ -1521,6 +1527,7 @@ export default function BrowserLayout() {
                                     currentUrl
                                   )}`
                                 );
+                                setAddNewTabSearchBar(false);
                               }}
                               className="bg-zinc-600 hover:bg-zinc-600 p-6 rounded-lg mt-2 mb-2 w-full truncate"
                             >
