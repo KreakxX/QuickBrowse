@@ -1657,6 +1657,12 @@ export default function BrowserLayout() {
                       <ScrollArea className="max-h-[600px] ">
                         {chatMessages.map((message, index) => {
                           const isCurrentUser = message.username === username;
+                          let messageParts: string[] = [];
+                          const urlRegex = /(https?:\/\/[^\s]+)/gi;
+                          if (message.message) {
+                            messageParts = message.message.split(urlRegex);
+                          }
+
                           return (
                             <div
                               key={index}
@@ -1686,7 +1692,40 @@ export default function BrowserLayout() {
                                     }}
                                     className="text-white  rounded-lg p-3 max-w-[200px] break-words"
                                   >
-                                    {message.message}
+                                    {messageParts.map((message) => {
+                                      if (
+                                        urlRegex.test(message) &&
+                                        message
+                                          .toLowerCase()
+                                          .includes("youtube")
+                                      ) {
+                                        const videoId =
+                                          extractYouTubeVideoID(message);
+                                        const embedURL = `https://www.youtube.com/embed/${videoId}`;
+                                        return (
+                                          <iframe
+                                            className="h-20 w-40 mt-2 mb-2 rounded-lg"
+                                            style={{ pointerEvents: "none" }}
+                                            src={embedURL}
+                                          ></iframe>
+                                        );
+                                      }
+                                      return null;
+                                    })}
+                                    {messageParts.map((message) =>
+                                      urlRegex.test(message) ? (
+                                        <a
+                                          onClick={() => {
+                                            addNewTab(message);
+                                          }}
+                                          className="text-blue-500 hover:cursor-pointer"
+                                        >
+                                          {message}
+                                        </a>
+                                      ) : (
+                                        <p>{message} </p>
+                                      )
+                                    )}
                                   </p>
                                 ) : (
                                   <p
@@ -1695,7 +1734,41 @@ export default function BrowserLayout() {
                                     }}
                                     className="text-white rounded-lg p-3 max-w-[200px] break-words"
                                   >
-                                    {message.message}
+                                    {messageParts.map((message) => {
+                                      if (
+                                        urlRegex.test(message) &&
+                                        message
+                                          .toLowerCase()
+                                          .includes("youtube")
+                                      ) {
+                                        const videoId =
+                                          extractYouTubeVideoID(message);
+                                        const embedURL = `https://www.youtube.com/embed/${videoId}`;
+                                        return (
+                                          <iframe
+                                            className="h-20 w-40 mt-2 mb-2 rounded-lg"
+                                            style={{ pointerEvents: "none" }}
+                                            src={embedURL}
+                                          ></iframe>
+                                        );
+                                      }
+                                      return null;
+                                    })}
+
+                                    {messageParts.map((message) =>
+                                      urlRegex.test(message) ? (
+                                        <a
+                                          onClick={() => {
+                                            addNewTab(message);
+                                          }}
+                                          className="text-blue-500 hover:cursor-pointer"
+                                        >
+                                          {message}
+                                        </a>
+                                      ) : (
+                                        <p>{message} </p>
+                                      )
+                                    )}
                                   </p>
                                 )}
                                 {isCurrentUser && (
