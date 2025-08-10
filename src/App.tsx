@@ -15,6 +15,8 @@ import {
   Play,
   Scaling,
   Search,
+  BookMarked,
+  Bookmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +95,10 @@ export default function BrowserLayout() {
     { url: "https://claude.ai", favIcon: "https://claude.ai/favicon.ico" },
     { url: "https://web.de", favIcon: "https://web.de/favicon.ico" },
     { url: "https://canva.com", favIcon: "https://canva.com/favicon.ico" },
+    {
+      url: "https://spotify.com",
+      favIcon: "https://spotify.com/favicon.ico",
+    },
   ]);
 
   interface color {
@@ -877,6 +883,7 @@ export default function BrowserLayout() {
         : null;
     }
   };
+  const saveTab = () => {};
 
   const closeTab = (id: number) => {
     const remainingTabs = tabs.filter((tab) => tab.id !== id);
@@ -984,6 +991,16 @@ export default function BrowserLayout() {
                 }}
               >
                 <RotateCcw className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
+                onClick={() => {
+                  saveTab();
+                }}
+              >
+                <Bookmark></Bookmark>
               </Button>
             </div>
             <div className="p-3">
@@ -1194,7 +1211,7 @@ export default function BrowserLayout() {
             </div>
 
             <div className="px-3 mb-4">
-              <div className="grid grid-cols-4 gap-4 mt-3">
+              <div className="grid grid-cols-3 gap-3 mt-3">
                 {savedTabs.map((tab, index) => (
                   <Button
                     onClick={() => {
@@ -1203,12 +1220,12 @@ export default function BrowserLayout() {
                     key={index}
                     variant="ghost"
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className={`w-12 h-12 rounded-lg   p-0 flex items-center justify-center transition-colors`}
+                    className={` w-18 h-12 rounded-lg  p-0 flex items-center justify-center transition-colors`}
                   >
                     {tab.favIcon ? (
                       <img
                         src={tab.favIcon || "/placeholder.svg"}
-                        className="w-7 h-7 rounded"
+                        className="w-6 h-6 rounded"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
@@ -1243,72 +1260,55 @@ export default function BrowserLayout() {
                       <button
                         onClick={() => switchToTab(tab.id)}
                         className={`w-full h-10 flex items-center justify-center text-left px-3 rounded ${
-                          tab.id === activeTabIdSession && shared
+                          activeTabIdSession === tab.id && shared
                             ? " border border-green-500"
-                            : tab.id === activeTabId
+                            : activeTabId === tab.id
                             ? " border border-blue-500"
                             : " border-none hover:bg-zinc-600"
                         } rounded-lg`}
                         style={{ backgroundColor: activeTheme?.secondary }}
                       >
-                        {tab.favIcon && (
-                          <img
-                            src={tab.favIcon || "/placeholder.svg"}
-                            alt="favicon"
-                            className="w-5 h-5 mr-2"
-                            onError={(e) =>
-                              (e.currentTarget.style.display = "none")
-                            }
-                          />
-                        )}
-                        {(() => {
-                          const tab = tabs.find((tab) => tab.id == splitViewId);
-                          if (tab == null) return;
-                          return (
-                            <img
-                              src={tab.favIcon || "/placeholder.svg"}
-                              alt="favicon"
-                              className="w-5 h-5 mr-2"
-                              onError={(e) =>
-                                (e.currentTarget.style.display = "none")
-                              }
-                            />
-                          );
-                        })()}
-
-                        <div className="flex items-center gap-1">
-                          <Button
-                            onClick={() => {
-                              closeTab(tab.id);
-                            }}
-                            className=" h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
+                        {/* Container for side-by-side tabs */}
+                        <div className="flex w-full gap-1 ">
+                          {/* First Tab */}
+                          <div
+                            key={tab.id}
+                            className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md"
                           >
-                            <X></X>
-                          </Button>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (activeTabId !== tab.id) {
-                                if (
-                                  splitViewId !== null &&
-                                  splitViewId === tab.id
-                                ) {
-                                  setSplitViewId(null);
-                                } else {
-                                  setSplitViewId(tab.id);
+                            {tab.favIcon && (
+                              <img
+                                src={tab.favIcon || "/placeholder.svg"}
+                                alt="favicon"
+                                className="w-4 h-4 mr-2"
+                                onError={(e) =>
+                                  (e.currentTarget.style.display = "none")
                                 }
-                              }
-                            }}
-                            className="h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
-                          >
-                            <Scaling
-                              className={`${
-                                splitViewId === tab.id && activeTabId !== tab.id
-                                  ? "text-green-500"
-                                  : "text-white"
-                              }`}
-                            ></Scaling>
-                          </Button>
+                              />
+                            )}
+                            <p className="truncate text-sm">{tab.title}</p>
+                          </div>
+
+                          {(() => {
+                            const splitTab = tabs.find(
+                              (t) => t.id === splitViewId
+                            );
+                            if (splitTab == null) return null;
+                            return (
+                              <div className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md">
+                                <img
+                                  src={splitTab.favIcon || "/placeholder.svg"}
+                                  alt="favicon"
+                                  className="w-4 h-4 mr-2"
+                                  onError={(e) =>
+                                    (e.currentTarget.style.display = "none")
+                                  }
+                                />
+                                <p className="truncate text-sm">
+                                  {splitTab.title}
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </button>
                     </div>
