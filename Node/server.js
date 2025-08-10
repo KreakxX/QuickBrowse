@@ -58,6 +58,13 @@ wss.on('connection', (ws) => {
       case 'skipped_backward':
         youtube_skipped_backward(ws,message)
         break;
+      case 'join_watchtogether':
+        join_watchTogether(ws, message)
+        break;
+
+      case 'join_info':
+        join_info(ws,message)
+        break;
       
     }
   });
@@ -74,6 +81,43 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+function join_info(ws,message){
+  const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+    const watchTogetherMessage = {
+      type: "join_info_client",
+      time: message.time,
+      url: message.url
+    }
+    console.log(message.time)
+    console.log(message.url)
+    
+    broadcastToSession(sessionCode,watchTogetherMessage,ws)
+
+}
+
+function join_watchTogether(ws,message){
+   const sessionCode = ws.sessionCode;
+    if (!sessionCode || !sessions[sessionCode]) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Du bist in keiner Session!'
+      }));
+      return;
+    } 
+     const watchTogetherMessage = {
+      type: "join_watchtogether",
+    }
+
+    broadcastToSession(sessionCode,watchTogetherMessage,ws)
+}
 
 function youtube_skipped_forward(ws,message){
     const sessionCode = ws.sessionCode;

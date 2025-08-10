@@ -130,8 +130,14 @@ export default function BrowserLayout() {
     { name: "powderBlue", hex: "#B0E0E6", secondary: "#8FC2C7" },
     { name: "mist", hex: "#D6EAF8", secondary: "#B6C9D6" },
   ];
-
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
+  const [skipped, setSkipped] = useState<boolean>(false);
+  const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
+  const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
   const activeTabIdRef = useRef(activeTabId);
+  const watchTogetherUrlRef = useRef(watchTogetherURL);
+  const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
     url: string;
@@ -195,6 +201,14 @@ export default function BrowserLayout() {
   useEffect(() => {
     activeTabIdRef.current = activeTabId;
   }, [activeTabId]);
+
+  useEffect(() => {
+    watchTogetherUrlRef.current = watchTogetherURL;
+  }, [watchTogetherURL]);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
 
   // just connection useEffect
   useEffect(() => {
@@ -448,6 +462,35 @@ export default function BrowserLayout() {
           setCurrentUrl(activeTab.url);
         }
         break;
+      case "join_watchtogether":
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          alert("Not connected to server");
+          return;
+        }
+
+        console.log(watchTogetherUrlRef.current);
+        console.log(currentTimeRef.current);
+
+        wsRef.current.send(
+          JSON.stringify({
+            type: "join_info",
+            time: currentTimeRef.current,
+            url: watchTogetherUrlRef.current,
+          })
+        );
+        break;
+      case "join_info_client":
+        if (data.url == "") {
+          setWatchTogether(false);
+        } else {
+          setWatchTogether(true);
+          setWatchTogetherURL(data.url);
+          setTimeout(() => {
+            skipForward(data.time);
+          }, 2000);
+        }
+
+        break;
 
       case "chat_message":
         setChatMessages((prev) => [
@@ -501,12 +544,6 @@ export default function BrowserLayout() {
       "*"
     );
   };
-
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
-  const [skipped, setSkipped] = useState<boolean>(false);
-  const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
-  const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
 
   useEffect(() => {
     if (currentTime - 5 > oldCurrentTime) {
@@ -656,6 +693,18 @@ export default function BrowserLayout() {
         type: "enableWatchTogether",
         watchTogether: true,
         embedUrl: embedURL,
+      })
+    );
+  };
+
+  const handleJoingWatchTogetherSession = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+    wsRef.current.send(
+      JSON.stringify({
+        type: "join_watchtogether",
       })
     );
   };
@@ -1416,6 +1465,7 @@ export default function BrowserLayout() {
                         <Button
                           onClick={() => {
                             setWatchTogether(false);
+                            setWatchTogetherURL("");
                           }}
                         >
                           End Session <X></X>
@@ -1437,6 +1487,14 @@ export default function BrowserLayout() {
                           }}
                         >
                           <Play></Play>
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            handleJoingWatchTogetherSession();
+                          }}
+                          className="w-full mt-2"
+                        >
+                          Join active Session
                         </Button>
                       </div>
                     )}
