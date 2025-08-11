@@ -5,6 +5,7 @@ import { Menu } from "electron";
 import { ipcMain } from 'electron';
 import { saveHistory, loadHistory } from './history.js';
 import fetch from 'node-fetch';
+import { addBookmark, loadBookmarks } from './Bookmarks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +49,14 @@ ipcMain.handle('history:save',(_event, url, favicon)=>{
 
 ipcMain.handle('history:load',(_event)=>{
   return loadHistory();
+})
+
+ipcMain.handle('bookmarks:save', (_event, url,favicon)=>{
+  addBookmark(url,favicon);
+})
+
+ipcMain.handle('bookmarks:load', (_event)=>{
+  return loadBookmarks();
 })
 
 app.whenReady().then(createWindow);

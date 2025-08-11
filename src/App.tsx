@@ -50,6 +50,15 @@ declare global {
           timestamp: number;
         }>
       >;
+      addNewBookmark: (url: string, favicon: string) => void;
+      loadAllBookmarks: () => Promise<
+        Array<{
+          id: number;
+          url: string;
+          favicon: string;
+          timestamp: number;
+        }>
+      >;
     };
   }
 }
@@ -137,6 +146,10 @@ export default function BrowserLayout() {
     { name: "mist", hex: "#D6EAF8", secondary: "#B6C9D6" },
   ];
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const [bookMarkTabs, setBookMarkTabs] = useState<
+    { id: number; url: string; favicon: string; timestamp: number }[]
+  >([]);
+
   const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
   const [skipped, setSkipped] = useState<boolean>(false);
   const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
@@ -885,7 +898,28 @@ export default function BrowserLayout() {
         : null;
     }
   };
-  const saveTab = () => {};
+  const saveTab = (id: number) => {
+    const tab = tabs.find((tab) => tab.id == id);
+    if (!tab) return;
+    window.electronAPI?.addNewBookmark(
+      tab.url,
+      new URL(tab.url).origin + "/favicon.ico"
+    );
+  };
+
+  const loadBookMarks = async () => {
+    const bookmarks = await window.electronAPI?.loadAllBookmarks();
+    if (!bookmarks) return;
+
+    const fixedBookmarks = bookmarks.map(({ id, url, favicon, timestamp }) => ({
+      id,
+      url,
+      favicon,
+      timestamp: timestamp,
+    }));
+
+    setBookMarkTabs(fixedBookmarks);
+  };
 
   const closeTab = (id: number) => {
     const remainingTabs = tabs.filter((tab) => tab.id !== id);
@@ -1003,7 +1037,7 @@ export default function BrowserLayout() {
                 size="sm"
                 className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
                 onClick={() => {
-                  saveTab();
+                  saveTab(activeTabId);
                 }}
               >
                 <Bookmark></Bookmark>
@@ -1215,7 +1249,6 @@ export default function BrowserLayout() {
                 </div>
               </div>
             </div>
-
             <div className="px-3 mb-4">
               <div className="grid grid-cols-3 gap-3 mt-3">
                 {savedTabs.map((tab, index) => (
@@ -1243,7 +1276,6 @@ export default function BrowserLayout() {
                 ))}
               </div>
             </div>
-
             <div className="flex-1 p-3 mt-5 ">
               <div className="mb-3 ">
                 <Button
@@ -1419,7 +1451,56 @@ export default function BrowserLayout() {
                 )}
               </div>
             </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  style={{ backgroundColor: activeTheme?.secondary }}
+                  className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                  onClick={() => {
+                    loadBookMarks();
+                  }}
+                >
+                  <Bookmark></Bookmark>
+                </Button>
+              </DialogTrigger>
+              <DialogContent
+                style={{ backgroundColor: activeTheme?.hex }}
+                className="max-w-[425px] border-none"
+              >
+                <DialogHeader>
+                  <DialogTitle className="text-white">Bookmarks</DialogTitle>
+                  <DialogDescription>View your Bookmarks</DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[600px] max-w-[400px] ">
+                  {bookMarkTabs.map((bookmark) => (
+                    <div className="flex justify-between mb-3">
+                      {bookmark.favicon && (
+                        <img
+                          src={bookmark.favicon}
+                          alt="favicon"
+                          className="w-5 h-5 mr-2 mt-2"
+                          onError={(e) =>
+                            (e.currentTarget.style.display = "none")
+                          }
+                        />
+                      )}
 
+                      <Button
+                        onClick={() => {
+                          setUrl(bookmark.url);
+                          setCurrentUrl(bookmark.url);
+                        }}
+                        className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
+                      >
+                        <span className="truncate block w-full text-left">
+                          {bookmark.url}
+                        </span>
+                      </Button>
+                    </div>
+                  ))}
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
             <div className="flex justify-between w-[20%]">
               <Dialog>
                 <DialogTrigger asChild>
@@ -1461,8 +1542,7 @@ export default function BrowserLayout() {
 
                         <Button
                           onClick={() => {
-                            setUrl(history.url);
-                            setCurrentUrl(history.url);
+                            addNewTab(history.url);
                           }}
                           className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
                         >
@@ -1544,9 +1624,6 @@ export default function BrowserLayout() {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    onClick={() => {
-                      loadHistory();
-                    }}
                     style={{ backgroundColor: activeTheme?.secondary }}
                     className="rounded-lg mb-3 ml-3 w-12 h-12 "
                   >
