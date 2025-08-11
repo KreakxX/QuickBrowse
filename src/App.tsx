@@ -1473,7 +1473,7 @@ export default function BrowserLayout() {
                 </DialogHeader>
                 <ScrollArea className="max-h-[600px] max-w-[400px] ">
                   {bookMarkTabs.map((bookmark) => (
-                    <div className="flex justify-between mb-3">
+                    <div className="flex justify-between mb-3 ">
                       {bookmark.favicon && (
                         <img
                           src={bookmark.favicon}
@@ -1484,11 +1484,11 @@ export default function BrowserLayout() {
                           }
                         />
                       )}
+                      <Bookmark className="text-yellow-500 fill-yellow-500 mt-1"></Bookmark>
 
                       <Button
                         onClick={() => {
-                          setUrl(bookmark.url);
-                          setCurrentUrl(bookmark.url);
+                          addNewTab(bookmark.url);
                         }}
                         className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
                       >
