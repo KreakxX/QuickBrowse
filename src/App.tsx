@@ -17,6 +17,7 @@ import {
   Search,
   BookMarked,
   Bookmark,
+  Group,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,15 @@ declare global {
       >;
       addNewBookmark: (url: string, favicon: string) => void;
       loadAllBookmarks: () => Promise<
+        Array<{
+          id: number;
+          url: string;
+          favicon: string;
+          timestamp: number;
+        }>
+      >;
+      addNewSavedtab: (url: string, favicon: string, id: number) => void;
+      loadSavedTab: () => Promise<
         Array<{
           id: number;
           url: string;
@@ -95,20 +105,7 @@ export default function BrowserLayout() {
   >([]);
   const [xSession, setXSession] = useState<number>(0);
   const [ySession, setYSession] = useState<number>(0);
-  const [savedTabs] = useState<savedTab[]>([
-    { url: "https://youtube.com", favIcon: "https://youtube.com/favicon.ico" },
-    { url: "https://github.com", favIcon: "https://github.com/favicon.ico" },
-    { url: "https://chatgpt.com", favIcon: "https://chatgpt.com/favicon.ico" },
-    { url: "https://x.com", favIcon: "https://x.com/favicon.ico" },
-    { url: "https://google.com", favIcon: "https://google.com/favicon.ico" },
-    { url: "https://claude.ai", favIcon: "https://claude.ai/favicon.ico" },
-    { url: "https://web.de", favIcon: "https://web.de/favicon.ico" },
-    { url: "https://canva.com", favIcon: "https://canva.com/favicon.ico" },
-    {
-      url: "https://spotify.com",
-      favIcon: "https://spotify.com/favicon.ico",
-    },
-  ]);
+  const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
 
   interface color {
     name: string;
@@ -154,12 +151,14 @@ export default function BrowserLayout() {
   const [skipped, setSkipped] = useState<boolean>(false);
   const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
   const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
+  const [savedTabId, setSavedTabId] = useState<number>(0);
   const activeTabIdRef = useRef(activeTabId);
   const watchTogetherUrlRef = useRef(watchTogetherURL);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
+    id: number;
     url: string;
     favIcon?: string;
   }
@@ -466,7 +465,7 @@ export default function BrowserLayout() {
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
-        setTabs((prev) => [...prev, data.tabs]);
+        setTabs(data.tabs);
 
         setChatMessages(data.messages || []);
         setNextId(data.nextId);
@@ -898,7 +897,7 @@ export default function BrowserLayout() {
         : null;
     }
   };
-  const saveTab = (id: number) => {
+  const saveNewBookmark = (id: number) => {
     const tab = tabs.find((tab) => tab.id == id);
     if (!tab) return;
     window.electronAPI?.addNewBookmark(
@@ -906,6 +905,40 @@ export default function BrowserLayout() {
       new URL(tab.url).origin + "/favicon.ico"
     );
   };
+
+  const saveNewLongTermTab = (id: number) => {
+    const tab = tabs.find((tab) => tab.id == id);
+    if (!tab) return;
+    window.electronAPI?.addNewSavedtab(
+      tab.url,
+      new URL(tab.url).origin + "/favicon.ico",
+      savedTabId
+    );
+    const newSavedTabId = savedTabId + 1;
+    setSavedTabs((prev) => [...prev, tab]);
+    setSavedTabId(newSavedTabId);
+  };
+
+  useEffect(() => {
+    const findSavedTabs = async () => {
+      const Savedtabs = await window.electronAPI?.loadSavedTab();
+      console.log(Savedtabs);
+      if (!Savedtabs) return;
+      const fixedSavedTabs = Savedtabs.map(
+        ({ id, url, favicon, timestamp }) => ({
+          id,
+          url,
+          favicon,
+          timestamp: timestamp,
+        })
+      );
+      setSavedTabs(fixedSavedTabs);
+
+      const lastElement = Savedtabs[Savedtabs?.length];
+      setSavedTabId(lastElement.id + 1);
+    };
+    findSavedTabs();
+  }, []);
 
   const loadBookMarks = async () => {
     const bookmarks = await window.electronAPI?.loadAllBookmarks();
@@ -1037,10 +1070,21 @@ export default function BrowserLayout() {
                 size="sm"
                 className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
                 onClick={() => {
-                  saveTab(activeTabId);
+                  saveNewBookmark(activeTabId);
                 }}
               >
                 <Bookmark></Bookmark>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
+                onClick={() => {
+                  saveNewLongTermTab(activeTabId);
+                }}
+              >
+                <Group></Group>
               </Button>
             </div>
             <div className="p-3">
@@ -1184,6 +1228,25 @@ export default function BrowserLayout() {
                             >
                               Create
                             </TabsTrigger>
+
+                            {shared ? (
+                              <TabsTrigger
+                                style={
+                                  {
+                                    "--tab-bg": activeTheme?.hex,
+                                    "--tab-bg-active": activeTheme?.secondary,
+                                  } as React.CSSProperties
+                                }
+                                className="
+      text-white
+      bg-[var(--tab-bg)]
+      data-[state=active]:bg-[var(--tab-bg-active)]
+    "
+                                value="Leave"
+                              >
+                                Leave
+                              </TabsTrigger>
+                            ) : null}
                           </TabsList>
 
                           <TabsContent value="join">
@@ -1240,6 +1303,18 @@ export default function BrowserLayout() {
                               className="w-full"
                             >
                               Create Session
+                            </Button>
+                          </TabsContent>
+
+                          <TabsContent value="Leave">
+                            <Button
+                              onClick={() => {}}
+                              style={{
+                                backgroundColor: activeTheme?.hex,
+                              }}
+                              className="w-full mt-10"
+                            >
+                              Leave active Session
                             </Button>
                           </TabsContent>
                         </Tabs>
@@ -1451,57 +1526,58 @@ export default function BrowserLayout() {
                 )}
               </div>
             </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  style={{ backgroundColor: activeTheme?.secondary }}
-                  className="rounded-lg mb-3 ml-3 w-12 h-12 "
-                  onClick={() => {
-                    loadBookMarks();
-                  }}
-                >
-                  <Bookmark></Bookmark>
-                </Button>
-              </DialogTrigger>
-              <DialogContent
-                style={{ backgroundColor: activeTheme?.hex }}
-                className="max-w-[425px] border-none"
-              >
-                <DialogHeader>
-                  <DialogTitle className="text-white">Bookmarks</DialogTitle>
-                  <DialogDescription>View your Bookmarks</DialogDescription>
-                </DialogHeader>
-                <ScrollArea className="max-h-[600px] max-w-[400px] ">
-                  {bookMarkTabs.map((bookmark) => (
-                    <div className="flex justify-between mb-3 ">
-                      {bookmark.favicon && (
-                        <img
-                          src={bookmark.favicon}
-                          alt="favicon"
-                          className="w-5 h-5 mr-2 mt-2"
-                          onError={(e) =>
-                            (e.currentTarget.style.display = "none")
-                          }
-                        />
-                      )}
-                      <Bookmark className="text-yellow-500 fill-yellow-500 mt-1"></Bookmark>
 
-                      <Button
-                        onClick={() => {
-                          addNewTab(bookmark.url);
-                        }}
-                        className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
-                      >
-                        <span className="truncate block w-full text-left">
-                          {bookmark.url}
-                        </span>
-                      </Button>
-                    </div>
-                  ))}
-                </ScrollArea>
-              </DialogContent>
-            </Dialog>
             <div className="flex justify-between w-[20%]">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                    onClick={() => {
+                      loadBookMarks();
+                    }}
+                  >
+                    <Bookmark></Bookmark>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent
+                  style={{ backgroundColor: activeTheme?.hex }}
+                  className="max-w-[425px] border-none"
+                >
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Bookmarks</DialogTitle>
+                    <DialogDescription>View your Bookmarks</DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="max-h-[600px] max-w-[400px] ">
+                    {bookMarkTabs.map((bookmark) => (
+                      <div className="flex justify-between mb-3 ">
+                        {bookmark.favicon && (
+                          <img
+                            src={bookmark.favicon}
+                            alt="favicon"
+                            className="w-5 h-5 mr-2 mt-2"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        )}
+                        <Bookmark className="text-yellow-500 fill-yellow-500 mt-1"></Bookmark>
+
+                        <Button
+                          onClick={() => {
+                            addNewTab(bookmark.url);
+                          }}
+                          className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
+                        >
+                          <span className="truncate block w-full text-left">
+                            {bookmark.url}
+                          </span>
+                        </Button>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </DialogContent>
+              </Dialog>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
@@ -1509,7 +1585,7 @@ export default function BrowserLayout() {
                       loadHistory();
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
                   >
                     <History></History>
                   </Button>
@@ -1563,7 +1639,7 @@ export default function BrowserLayout() {
                         loadHistory();
                       }}
                       style={{ backgroundColor: activeTheme?.secondary }}
-                      className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                      className="rounded-lg mb-3 ml-3 w-9 h-10 "
                     >
                       <Youtube size={30}></Youtube>
                     </Button>
@@ -1625,7 +1701,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-12 h-12 "
+                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
                   >
                     <Palette></Palette>
                   </Button>
@@ -1752,7 +1828,7 @@ export default function BrowserLayout() {
                     <DialogTrigger asChild>
                       <Button
                         style={{ backgroundColor: activeTheme?.secondary }}
-                        className="rounded-lg mb-3 ml-3 w-12 h-12"
+                        className="rounded-lg mb-3 ml-3 w-9 h-10 "
                       >
                         <MessageCircle></MessageCircle>
                       </Button>
