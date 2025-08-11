@@ -143,6 +143,7 @@ export default function BrowserLayout() {
   const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
   const activeTabIdRef = useRef(activeTabId);
   const watchTogetherUrlRef = useRef(watchTogetherURL);
+  const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
@@ -452,7 +453,8 @@ export default function BrowserLayout() {
       case "session_joined":
         setSessionCode(data.code);
         setShared(true);
-        setTabs(data.tabs);
+        setTabs((prev) => [...prev, data.tabs]);
+
         setChatMessages(data.messages || []);
         setNextId(data.nextId);
         setActiveTabId(data.activeTabId);
@@ -894,6 +896,10 @@ export default function BrowserLayout() {
       return;
     }
 
+    if (id == activeTabId || id == splitViewId) {
+      setSplitViewId(null);
+    }
+
     if (shared) {
       wsRef.current.send(
         JSON.stringify({
@@ -1268,10 +1274,14 @@ export default function BrowserLayout() {
                         } rounded-lg`}
                         style={{ backgroundColor: activeTheme?.secondary }}
                       >
-                        {/* Container for side-by-side tabs */}
                         <div className="flex w-full gap-1 ">
-                          {/* First Tab */}
                           <div
+                            onMouseEnter={() => {
+                              setHoveredTab(tab.id);
+                            }}
+                            onMouseLeave={() => {
+                              setHoveredTab(null);
+                            }}
                             key={tab.id}
                             className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md"
                           >
@@ -1285,7 +1295,19 @@ export default function BrowserLayout() {
                                 }
                               />
                             )}
-                            <p className="truncate text-sm">{tab.title}</p>
+                            <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
+                              {tab.title}
+                            </p>
+                            {hoveredTab == tab.id ? (
+                              <Button
+                                onClick={() => {
+                                  closeTab(tab.id);
+                                }}
+                                className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
+                              >
+                                <X className="h-4 w-4"></X>
+                              </Button>
+                            ) : null}
                           </div>
 
                           {(() => {
@@ -1294,7 +1316,15 @@ export default function BrowserLayout() {
                             );
                             if (splitTab == null) return null;
                             return (
-                              <div className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md">
+                              <div
+                                onMouseEnter={() => {
+                                  setHoveredTab(splitViewId);
+                                }}
+                                onMouseLeave={() => {
+                                  setHoveredTab(null);
+                                }}
+                                className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md"
+                              >
                                 <img
                                   src={splitTab.favIcon || "/placeholder.svg"}
                                   alt="favicon"
@@ -1303,9 +1333,19 @@ export default function BrowserLayout() {
                                     (e.currentTarget.style.display = "none")
                                   }
                                 />
-                                <p className="truncate text-sm">
+                                <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
                                   {splitTab.title}
                                 </p>
+                                {hoveredTab == splitViewId ? (
+                                  <Button
+                                    onClick={() => {
+                                      closeTab(splitViewId);
+                                    }}
+                                    className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
+                                  >
+                                    <X className="h-4 w-4"></X>
+                                  </Button>
+                                ) : null}
                               </div>
                             );
                           })()}
