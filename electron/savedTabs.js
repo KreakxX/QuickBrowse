@@ -27,6 +27,7 @@ export function loadAllSavedTabs(){
 }
 
 export function deleteSavedTab(id){
- db.prepare(`DELETE FROM savedTabs where id like ${id} `);
+ const dbStatement =  db.prepare(`DELETE FROM savedTabs where id = ? `);
+  dbStatement.run(id)
 }
  

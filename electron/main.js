@@ -6,7 +6,7 @@ import { ipcMain } from 'electron';
 import { saveHistory, loadHistory } from './history.js';
 import fetch from 'node-fetch';
 import { addBookmark, loadBookmarks } from './Bookmarks.js';
-import { addSavedTab, loadAllSavedTabs } from './savedTabs.js';
+import { addSavedTab, loadAllSavedTabs,deleteSavedTab } from './savedTabs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +68,7 @@ ipcMain.handle('savedTabs:load', (_event) =>{
   return loadAllSavedTabs();
 })
 
-ipcMain.handle('savedTabs:remove', (_event,id)=>{
+ipcMain.handle('savedTabs:delete', (_event,id)=>{
   return deleteSavedTab(id);
 })
 

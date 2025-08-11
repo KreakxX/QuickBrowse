@@ -69,6 +69,7 @@ declare global {
           timestamp: number;
         }>
       >;
+      deleteSavedTab: (id: number) => void;
     };
   }
 }
@@ -155,12 +156,13 @@ export default function BrowserLayout() {
   const activeTabIdRef = useRef(activeTabId);
   const watchTogetherUrlRef = useRef(watchTogetherURL);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
+  const [hoveredTabSaved, setHoveredTabSaved] = useState<number | null>(null);
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   interface savedTab {
     id: number;
     url: string;
-    favIcon?: string;
+    favicon?: string;
   }
 
   interface tab {
@@ -907,6 +909,7 @@ export default function BrowserLayout() {
   };
 
   const saveNewLongTermTab = (id: number) => {
+    if (savedTabs.length >= 9) return;
     const tab = tabs.find((tab) => tab.id == id);
     if (!tab) return;
     window.electronAPI?.addNewSavedtab(
@@ -914,16 +917,27 @@ export default function BrowserLayout() {
       new URL(tab.url).origin + "/favicon.ico",
       savedTabId
     );
+    const savedTab = {
+      id: id,
+      url: tab.url,
+      favicon: tab.favIcon,
+    };
     const newSavedTabId = savedTabId + 1;
-    setSavedTabs((prev) => [...prev, tab]);
+    setSavedTabs((prev) => [...prev, savedTab]);
     setSavedTabId(newSavedTabId);
+  };
+
+  const deleteLongTermTab = (id: number) => {
+    const filteredTabs = savedTabs.filter((tab) => tab.id !== id);
+    setSavedTabs(filteredTabs);
+    window.electronAPI?.deleteSavedTab(id);
   };
 
   useEffect(() => {
     const findSavedTabs = async () => {
       const Savedtabs = await window.electronAPI?.loadSavedTab();
       console.log(Savedtabs);
-      if (!Savedtabs) return;
+      if (!Savedtabs || Savedtabs.length === 0) return;
       const fixedSavedTabs = Savedtabs.map(
         ({ id, url, favicon, timestamp }) => ({
           id,
@@ -932,9 +946,10 @@ export default function BrowserLayout() {
           timestamp: timestamp,
         })
       );
+      console.log(fixedSavedTabs);
       setSavedTabs(fixedSavedTabs);
 
-      const lastElement = Savedtabs[Savedtabs?.length];
+      const lastElement = Savedtabs[Savedtabs?.length - 1];
       setSavedTabId(lastElement.id + 1);
     };
     findSavedTabs();
@@ -1328,6 +1343,12 @@ export default function BrowserLayout() {
               <div className="grid grid-cols-3 gap-3 mt-3">
                 {savedTabs.map((tab, index) => (
                   <Button
+                    onMouseEnter={() => {
+                      setHoveredTabSaved(tab.id);
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredTabSaved(null);
+                    }}
                     onClick={() => {
                       addNewTab(tab.url);
                     }}
@@ -1336,9 +1357,20 @@ export default function BrowserLayout() {
                     style={{ backgroundColor: activeTheme?.secondary }}
                     className={` w-18 h-12 rounded-lg  p-0 flex items-center justify-center transition-colors`}
                   >
-                    {tab.favIcon ? (
+                    {hoveredTabSaved == tab.id ? (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteLongTermTab(tab.id);
+                        }}
+                        className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
+                      >
+                        <X className="h-4 w-4"></X>
+                      </Button>
+                    ) : null}
+                    {tab.favicon ? (
                       <img
-                        src={tab.favIcon || "/placeholder.svg"}
+                        src={tab.favicon || "/placeholder.svg"}
                         className="w-6 h-6 rounded"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
