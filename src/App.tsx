@@ -18,6 +18,7 @@ import {
   BookMarked,
   Bookmark,
   Group,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -263,16 +264,23 @@ export default function BrowserLayout() {
 
   const loadHistory = async () => {
     if (!window.electronAPI?.historyload) return;
-    const history = await window.electronAPI.historyload();
-    const fixedHistory = history.map(({ id, url, favicon, timestamp }) => ({
-      id,
-      url,
-      favicon,
-      timestamp: timestamp,
-    }));
+    const history = (await window.electronAPI.historyload()).slice(0, 50);
+    const fixedHistory = history
+      .map(({ id, url, favicon, timestamp }) => ({
+        id,
+        url,
+        favicon,
+        timestamp: timestamp,
+      }))
+      .slice(0, 50);
 
-    setHistory(fixedHistory);
+    const sortedHistory = fixedHistory
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 50);
+
+    setHistory(sortedHistory);
   };
+
   // gucken was man alles easy sharen kann
   useEffect(() => {
     const handleWebViewEvents = () => {
@@ -918,7 +926,7 @@ export default function BrowserLayout() {
       savedTabId
     );
     const savedTab = {
-      id: id,
+      id: savedTabId,
       url: tab.url,
       favicon: tab.favIcon,
     };
@@ -1039,6 +1047,13 @@ export default function BrowserLayout() {
         }
       }
     });
+  };
+
+  const getGridColumns = () => {
+    const tabCount = savedTabs.length;
+    if (tabCount === 0) return "1fr";
+    const cols = Math.min(tabCount, 3);
+    return `repeat(${cols}, 1fr)`;
   };
 
   return (
@@ -1339,48 +1354,52 @@ export default function BrowserLayout() {
                 </div>
               </div>
             </div>
-            <div className="px-3 mb-4">
-              <div className="grid grid-cols-3 gap-3 mt-3">
-                {savedTabs.map((tab, index) => (
-                  <Button
-                    onMouseEnter={() => {
-                      setHoveredTabSaved(tab.id);
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredTabSaved(null);
-                    }}
-                    onClick={() => {
-                      addNewTab(tab.url);
-                    }}
-                    key={index}
-                    variant="ghost"
-                    style={{ backgroundColor: activeTheme?.secondary }}
-                    className={` w-18 h-12 rounded-lg  p-0 flex items-center justify-center transition-colors`}
-                  >
-                    {hoveredTabSaved == tab.id ? (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteLongTermTab(tab.id);
-                        }}
-                        className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
-                      >
-                        <X className="h-4 w-4"></X>
-                      </Button>
-                    ) : null}
-                    {tab.favicon ? (
-                      <img
-                        src={tab.favicon || "/placeholder.svg"}
-                        className="w-6 h-6 rounded"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
-                    )}
-                  </Button>
-                ))}
+            <div className="px-3 mb-4 w-full">
+              <div className="mt-6">
+                <div
+                  className="grid  gap-1 w-full"
+                  style={{
+                    gridTemplateColumns: getGridColumns(),
+                  }}
+                >
+                  {savedTabs.map((tab) => (
+                    <Button
+                      key={`grid-${tab.id}`}
+                      onMouseEnter={() => setHoveredTabSaved(tab.id)}
+                      onMouseLeave={() => setHoveredTabSaved(null)}
+                      onClick={() => addNewTab(tab.url)}
+                      variant="ghost"
+                      style={{ backgroundColor: activeTheme?.secondary }}
+                      className="h-12 rounded-lg p-2 flex items-center justify-center transition-colors min-w-0"
+                    >
+                      {hoveredTabSaved === tab.id ? (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteLongTermTab(tab.id);
+                          }}
+                          className="h-3 w-3 hover:bg-zinc-500 bg-transparent rounded-sm"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      ) : (
+                        <>
+                          {tab.favicon ? (
+                            <img
+                              src={tab.favicon || "/placeholder.svg"}
+                              className="w-6 h-6 rounded"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
+                          )}
+                        </>
+                      )}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex-1 p-3 mt-5 ">
@@ -1572,41 +1591,76 @@ export default function BrowserLayout() {
                     <Bookmark></Bookmark>
                   </Button>
                 </DialogTrigger>
-                <DialogContent
-                  style={{ backgroundColor: activeTheme?.hex }}
-                  className="max-w-[425px] border-none"
-                >
+                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
                   <DialogHeader>
                     <DialogTitle className="text-white">Bookmarks</DialogTitle>
                     <DialogDescription>View your Bookmarks</DialogDescription>
                   </DialogHeader>
-                  <ScrollArea className="max-h-[600px] max-w-[400px] ">
-                    {bookMarkTabs.map((bookmark) => (
-                      <div className="flex justify-between mb-3 ">
-                        {bookmark.favicon && (
-                          <img
-                            src={bookmark.favicon}
-                            alt="favicon"
-                            className="w-5 h-5 mr-2 mt-2"
-                            onError={(e) =>
-                              (e.currentTarget.style.display = "none")
-                            }
-                          />
-                        )}
-                        <Bookmark className="text-yellow-500 fill-yellow-500 mt-1"></Bookmark>
+                  <ScrollArea className="h-[400px] pr-4">
+                    <div className="space-y-2">
+                      {bookMarkTabs.map((bookmark, index) => {
+                        const url = new URL(bookmark.url);
+                        const domain = url.hostname.replace("www.", "");
+                        const serviceName = domain.split(".")[0];
+                        return (
+                          <div
+                            key={index}
+                            className=" relative  rounded-lg border-none mb-3"
+                          >
+                            <Button
+                              onClick={() => addNewTab(bookmark.url)}
+                              className="w-full h-auto p-4 justify-start bg-zinc-800 hover:bg-zinc-700  rounded-lg"
+                            >
+                              <div className="flex items-center gap-3 w-full min-w-0">
+                                {/* Favicon */}
+                                <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+                                  {bookmark.favicon ? (
+                                    <img
+                                      src={
+                                        bookmark.favicon || "/placeholder.svg"
+                                      }
+                                      alt=""
+                                      className="w-5 h-5"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        e.currentTarget.nextElementSibling?.classList.remove(
+                                          "hidden"
+                                        );
+                                      }}
+                                    />
+                                  ) : null}
+                                </div>
 
-                        <Button
-                          onClick={() => {
-                            addNewTab(bookmark.url);
-                          }}
-                          className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
-                        >
-                          <span className="truncate block w-full text-left">
-                            {bookmark.url}
-                          </span>
-                        </Button>
+                                {/* Content */}
+                                <div className="flex-1 min-w-0 text-left">
+                                  <div className="font-medium text-white truncate">
+                                    {serviceName}
+                                  </div>
+                                  <div className="text-xs text-gray-400 dark:text-gray-400 truncate">
+                                    {bookmark.url}
+                                  </div>
+                                </div>
+
+                                {/* External link icon */}
+                                <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
+                              </div>
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {bookMarkTabs.length === 0 && (
+                      <div className="text-center py-12">
+                        <Bookmark className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-500 dark:text-gray-400">
+                          No bookmarks yet
+                        </p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">
+                          Save your favorite sites to see them here
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </ScrollArea>
                 </DialogContent>
               </Dialog>
@@ -1622,10 +1676,7 @@ export default function BrowserLayout() {
                     <History></History>
                   </Button>
                 </DialogTrigger>
-                <DialogContent
-                  style={{ backgroundColor: activeTheme?.hex }}
-                  className="max-w-[425px]   border-none"
-                >
+                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       Search History
@@ -1635,31 +1686,54 @@ export default function BrowserLayout() {
                     </DialogDescription>
                   </DialogHeader>
                   <ScrollArea className="max-h-[600px] max-w-[400px] ">
-                    {history.map((history) => (
-                      <div className="flex justify-between mb-3">
-                        {history.favicon && (
-                          <img
-                            src={history.favicon}
-                            alt="favicon"
-                            className="w-5 h-5 mr-2 mt-2"
-                            onError={(e) =>
-                              (e.currentTarget.style.display = "none")
-                            }
-                          />
-                        )}
-
-                        <Button
-                          onClick={() => {
-                            addNewTab(history.url);
-                          }}
-                          className="flex-1 text-sm text-white bg-transparent hover:bg-transparent"
+                    {history.map((history, index) => {
+                      const url = new URL(history.url);
+                      const domain = url.hostname.replace("www.", "");
+                      const serviceName = domain.split(".")[0];
+                      return (
+                        <div
+                          key={index}
+                          className=" relative  rounded-lg border-none mb-3"
                         >
-                          <span className="truncate block w-full text-left">
-                            {history.url}
-                          </span>
-                        </Button>
-                      </div>
-                    ))}
+                          <Button
+                            onClick={() => addNewTab(history.url)}
+                            className="w-full h-auto p-4 justify-start bg-zinc-800 hover:bg-zinc-700  rounded-lg"
+                          >
+                            <div className="flex items-center gap-3 w-full min-w-0">
+                              {/* Favicon */}
+                              <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+                                {history.favicon ? (
+                                  <img
+                                    src={history.favicon || "/placeholder.svg"}
+                                    alt=""
+                                    className="w-5 h-5"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      e.currentTarget.nextElementSibling?.classList.remove(
+                                        "hidden"
+                                      );
+                                    }}
+                                  />
+                                ) : null}
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0 text-left">
+                                <div className="font-medium text-white truncate">
+                                  {serviceName}
+                                </div>
+                                <div className="text-xs text-gray-400 dark:text-gray-400 truncate">
+                                  {history.url}
+                                </div>
+                              </div>
+
+                              {/* External link icon */}
+                              <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
+                            </div>
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </ScrollArea>
                 </DialogContent>
               </Dialog>
