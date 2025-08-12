@@ -38,6 +38,12 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 declare global {
   interface Window {
     electronAPI?: {
@@ -1372,31 +1378,33 @@ export default function BrowserLayout() {
                       style={{ backgroundColor: activeTheme?.secondary }}
                       className="h-12 rounded-lg p-2 flex items-center justify-center transition-colors min-w-0"
                     >
-                      {hoveredTabSaved === tab.id ? (
-                        <Button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteLongTermTab(tab.id);
-                          }}
-                          className="h-3 w-3 hover:bg-zinc-500 bg-transparent rounded-sm"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      ) : (
-                        <>
-                          {tab.favicon ? (
-                            <img
-                              src={tab.favicon || "/placeholder.svg"}
-                              className="w-6 h-6 rounded"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-6 h-6 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
-                          )}
-                        </>
-                      )}
+                      <ContextMenu>
+                        <ContextMenuTrigger>
+                          <>
+                            {tab.favicon ? (
+                              <img
+                                src={tab.favicon || "/placeholder.svg"}
+                                className="w-6 h-6 rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
+                            )}
+                          </>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteLongTermTab(tab.id);
+                            }}
+                          >
+                            Delete
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     </Button>
                   ))}
                 </div>
