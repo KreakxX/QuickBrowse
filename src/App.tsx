@@ -268,6 +268,8 @@ export default function BrowserLayout() {
     };
   }, []);
 
+  // UI loading with bookmarks like yellow color and the savedTab
+
   const loadHistory = async () => {
     if (!window.electronAPI?.historyload) return;
     const history = (await window.electronAPI.historyload()).slice(0, 50);
@@ -1840,7 +1842,7 @@ export default function BrowserLayout() {
                     ))}
                   </div>
                 </DialogContent>
-              </Dialog>{" "}
+              </Dialog>
               <Dialog
                 open={addNewTabSearchBar}
                 onOpenChange={() => {

@@ -78,4 +78,21 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+app.commandLine.appendSwitch("disable-features", "SitePerProcess,TranslateUI,BlinkGenPropertyTrees");
 
+
+app.commandLine.appendSwitch("max_old_space_size", "4096");
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=4096");
+app.commandLine.appendSwitch("disable-dev-shm-usage");
+
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("ignore-gpu-blacklist");
+app.commandLine.appendSwitch("disable-gpu-sandbox");
+
+app.commandLine.appendSwitch("aggressive-cache-discard");
+app.commandLine.appendSwitch("enable-quic");
+app.commandLine.appendSwitch("enable-tcp-fast-open");
