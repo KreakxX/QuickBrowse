@@ -239,6 +239,12 @@ export default function BrowserLayout() {
     );
   };
 
+  const getAllTabs = () => {
+    const normalTabs = tabs;
+    const groupTabs = tabGroups.flatMap((group) => group.tabs);
+    return [...normalTabs, ...groupTabs];
+  };
+
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
@@ -966,7 +972,8 @@ export default function BrowserLayout() {
 
   const switchToTab = (tabId: number) => {
     setActiveTabId(tabId);
-    const tab = tabs.find((t) => t.id === tabId);
+    const allTabs = getAllTabs();
+    const tab = allTabs.find((t) => t.id === tabId);
     if (tab) {
       setUrl(tab.url);
       setCurrentUrl(tab.url);
@@ -2584,8 +2591,9 @@ export default function BrowserLayout() {
                 className="w-full h-full"
               >
                 <ResizablePanel>
-                  {tabs.map((tab) => (
+                  {getAllTabs().map((tab) => (
                     <webview
+                      key={tab.id}
                       ref={(el) => {
                         webviewRefs.current[tab.id] = el;
                       }}
