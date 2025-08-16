@@ -223,6 +223,9 @@ export default function BrowserLayout() {
           : group
       )
     );
+    setActiveTabId(nextId);
+    setUrl(url);
+    setCurrentUrl(url);
 
     setNextId((prev) => prev + 1);
   };
@@ -1624,7 +1627,7 @@ export default function BrowserLayout() {
                                 </div>
 
                                 {(() => {
-                                  const splitTab = tabGroup.tabs.find(
+                                  const splitTab = getAllTabs().find(
                                     (t) => t.id === splitViewId
                                   );
                                   if (!splitTab) return null;
@@ -1801,7 +1804,7 @@ export default function BrowserLayout() {
                           </div>
 
                           {(() => {
-                            const splitTab = tabs.find(
+                            const splitTab = getAllTabs().find(
                               (t) => t.id === splitViewId
                             );
                             if (splitTab == null) return null;
