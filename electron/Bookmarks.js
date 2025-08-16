@@ -25,3 +25,4 @@ export function addBookmark(url, favicon = null) {
 export function loadBookmarks(){
  return db.prepare(`SELECT * FROM bookmarks`).all();
 }
+

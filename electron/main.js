@@ -78,21 +78,32 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.commandLine.appendSwitch("disable-renderer-backgrounding");
-app.commandLine.appendSwitch("disable-background-timer-throttling");
-app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
-app.commandLine.appendSwitch("disable-features", "SitePerProcess,TranslateUI,BlinkGenPropertyTrees");
+app.commandLine.appendSwitch("disable-features", "SitePerProcess,VizDisplayCompositor");
+app.commandLine.appendSwitch("disable-site-isolation-trials");
 
+app.commandLine.appendSwitch("renderer-process-limit", "4");
+app.commandLine.appendSwitch("max_active_webgl_contexts", "8");
+
+app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder,VaapiIgnoreDriverChecks");
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-oop-rasterization");
+app.commandLine.appendSwitch("disable-software-rasterizer");
+
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("disable-gpu-driver-bug-workarounds");
 
 app.commandLine.appendSwitch("max_old_space_size", "4096");
 app.commandLine.appendSwitch("js-flags", "--max-old-space-size=4096");
-app.commandLine.appendSwitch("disable-dev-shm-usage");
 
-app.commandLine.appendSwitch("enable-gpu-rasterization");
-app.commandLine.appendSwitch("enable-zero-copy");
-app.commandLine.appendSwitch("ignore-gpu-blacklist");
-app.commandLine.appendSwitch("disable-gpu-sandbox");
-
-app.commandLine.appendSwitch("aggressive-cache-discard");
 app.commandLine.appendSwitch("enable-quic");
 app.commandLine.appendSwitch("enable-tcp-fast-open");
+app.commandLine.appendSwitch("aggressive-cache-discard");
+
+app.commandLine.appendSwitch("disable-features", "SitePerProcess,VizDisplayCompositor,TranslateUI,AutofillServerCommunication");
+app.commandLine.appendSwitch("disable-component-extensions-with-background-pages");
+app.commandLine.appendSwitch("disable-default-apps");
+app.commandLine.appendSwitch("disable-extensions");
+
+app.commandLine.appendSwitch("disable-background-media-suspend");
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+

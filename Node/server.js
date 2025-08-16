@@ -65,7 +65,10 @@ wss.on('connection', (ws) => {
       case 'join_info':
         join_info(ws,message)
         break;
-      
+        
+      case 'delete_session':
+        deleteSession(ws,message)
+        break;
     }
   });
 
@@ -81,6 +84,36 @@ wss.on('connection', (ws) => {
     }
   });
 });
+
+function deleteSession(ws,message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  } 
+
+
+  const deleteMessions = {
+    type: "delete_session",
+    code: sessionCode
+  }
+
+  broadcastToSession(sessionCode,deleteMessions,ws)
+
+  if (sessions[sessionCode] && sessions[sessionCode].clients) {
+    sessions[sessionCode].clients.forEach(client => {
+      if (client.sessionCode === sessionCode) {
+        delete client.sessionCode; 
+      }
+    });
+  }
+  
+  delete sessions[sessionCode];
+
+}
 
 function join_info(ws,message){
   const sessionCode = ws.sessionCode;

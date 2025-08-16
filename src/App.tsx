@@ -103,7 +103,6 @@ export default function BrowserLayout() {
     message?: string;
   }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [sessionCode, setSessionCode] = useState<string>("");
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
   const [splitViewId, setSplitViewId] = useState<number | null>(null);
@@ -166,6 +165,7 @@ export default function BrowserLayout() {
   const [hoveredTabSaved, setHoveredTabSaved] = useState<number | null>(null);
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
+
   interface savedTab {
     id: number;
     url: string;
@@ -401,11 +401,22 @@ export default function BrowserLayout() {
     };
   }, [activeTabId, splitViewId, shared]);
 
+  const [sessionCreated, setSessionCreated] = useState<boolean>(false);
+  const [sessionJoined, setSessionJoined] = useState<boolean>(false);
+  const [sessionCode, setSessionCode] = useState<string>("");
+
+  const sessionCodeRef = useRef(sessionCode);
+
+  useEffect(() => {
+    sessionCodeRef.current = sessionCode;
+  }, [sessionCode]);
+
   // method for chaning bools and if chat_message than update the Chatmessages
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case "session_created":
         setSessionCode(data.code);
+        setSessionCreated(true);
         setShared(true);
         break;
       case "mouse_update":
@@ -480,8 +491,14 @@ export default function BrowserLayout() {
       case "skipped_backward":
         skipBackward(data.time);
         break;
+      case "delete_session":
+        setShared(false);
+        setSessionJoined(false);
+        setSessionCode("");
+        break;
       case "session_joined":
         setSessionCode(data.code);
+        setSessionJoined(true);
         setShared(true);
         setTabs(data.tabs);
 
@@ -542,9 +559,27 @@ export default function BrowserLayout() {
         break;
     }
   };
-  // add tab recognition and methods for adding and removing tabs
 
-  // same for here
+  const closeSession = () => {
+    if (sessionCreated && shared) {
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        alert("Not connected to server");
+        return;
+      }
+
+      wsRef.current.send(
+        JSON.stringify({
+          type: "delete_session",
+          sessionCode: sessionCode,
+        })
+      );
+
+      setShared(false);
+      setSessionCode("");
+      setSessionCreated(false);
+    }
+  };
+
   const createSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -1103,27 +1138,30 @@ export default function BrowserLayout() {
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
-                onClick={() => {
-                  saveNewBookmark(activeTabId);
-                }}
-              >
-                <Bookmark></Bookmark>
-              </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
-                onClick={() => {
-                  saveNewLongTermTab(activeTabId);
-                }}
-              >
-                <Group></Group>
-              </Button>
+              <div className="ml-10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
+                  onClick={() => {
+                    saveNewBookmark(activeTabId);
+                  }}
+                >
+                  <Bookmark></Bookmark>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-transparent  "
+                  onClick={() => {
+                    saveNewLongTermTab(activeTabId);
+                  }}
+                >
+                  <Group></Group>
+                </Button>
+              </div>
             </div>
             <div className="p-3">
               <div className="relative">
@@ -1294,7 +1332,7 @@ export default function BrowserLayout() {
                               }}
                               placeholder="Enter Code"
                               value={sessionCode}
-                              className="mb-2 mt-2 text-white "
+                              className="mb-2 mt-2 text-white border border-zinc-500 "
                             ></Input>
                             <Input
                               onChange={(e) => {
@@ -1302,7 +1340,7 @@ export default function BrowserLayout() {
                               }}
                               value={username}
                               placeholder="Enter Username"
-                              className="mb-3 mt-2 text-white"
+                              className="mb-3 mt-2 text-white border border-zinc-500"
                             ></Input>
                             <Button
                               onClick={() => {
@@ -1321,7 +1359,7 @@ export default function BrowserLayout() {
                             <Input
                               value={sessionCode}
                               placeholder="Create Code"
-                              className="mb-2 mt-2 text-white"
+                              className="mb-2 mt-2 text-white border border-zinc-500"
                             ></Input>
                             <Input
                               onChange={(e) => {
@@ -1329,7 +1367,7 @@ export default function BrowserLayout() {
                               }}
                               value={username}
                               placeholder="Enter Username"
-                              className="mb-3 mt-2 text-white"
+                              className="mb-3 mt-2 text-white border border-zinc-500"
                             ></Input>
                             <Button
                               onClick={() => {
@@ -1346,7 +1384,9 @@ export default function BrowserLayout() {
 
                           <TabsContent value="Leave">
                             <Button
-                              onClick={() => {}}
+                              onClick={() => {
+                                closeSession();
+                              }}
                               style={{
                                 backgroundColor: activeTheme?.hex,
                               }}
@@ -1365,7 +1405,7 @@ export default function BrowserLayout() {
             <div className="px-3 mb-4 w-full">
               <div className="mt-6">
                 <div
-                  className="grid  gap-1 w-full"
+                  className="grid  gap-2 w-full"
                   style={{
                     gridTemplateColumns: getGridColumns(),
                   }}
@@ -2128,18 +2168,6 @@ export default function BrowserLayout() {
 
         <div className="flex-1 bg-zinc-900 relative min-h-screen">
           <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
-            {/* <button
-              className="absolute left-[0%] top-[3%] hover:bg-zinc-500 bg-zinc-600 h-8 w-8 border-none rounded flex items-center justify-center text-white z-10"
-              onClick={() => {
-                setShowSidebar(!showSidebar);
-              }}
-            >
-              {!showSidebar ? (
-                <ChevronRight></ChevronRight>
-              ) : (
-                <ChevronLeft></ChevronLeft>
-              )}
-            </button> */}
             {activeTabId === activeTabIdSession && shared ? (
               <MousePointer2
                 color="limegreen"
@@ -2157,11 +2185,7 @@ export default function BrowserLayout() {
                 }}
               />
             ) : null}
-            {/* refs machen für Performacne aber das ist erster Ansatz 
-             Page Title machen für besseres Browsing Erlebnis
-             just showing the ref all time, but adding the new Webview as second resizePanel
-             Hover UI and New Tab adding
-             */}
+
             {!watchTogether ? (
               <ResizablePanelGroup
                 direction="horizontal"
@@ -2208,14 +2232,15 @@ export default function BrowserLayout() {
                             webviewRefs.current[tab.id] = el;
                           }}
                           src={tab.url}
-                          className={`z-10 w-full h-full `}
+                          className={`z-10 w-full h-full`}
                           partition="persist:QuickBrowse"
                           allowpopups={false}
                           style={{
                             pointerEvents:
                               shareCursor || isResizing ? "none" : "auto",
                           }}
-                          webpreferences="contextIsolation,sandbox"
+                          webpreferences="contextIsolation,sandbox,backgroundThrottling=false,v8CacheOptions=code,enableRemoteModule=false"
+                          useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                         />
                       </ResizablePanel>
                     );
