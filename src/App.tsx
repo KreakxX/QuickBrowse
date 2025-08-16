@@ -19,6 +19,9 @@ import {
   Bookmark,
   Group,
   ExternalLink,
+  GroupIcon,
+  AppWindow,
+  Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,7 +116,7 @@ export default function BrowserLayout() {
   const [xSession, setXSession] = useState<number>(0);
   const [ySession, setYSession] = useState<number>(0);
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
-
+  const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   interface color {
     name: string;
     hex: string;
@@ -161,15 +164,25 @@ export default function BrowserLayout() {
   const [savedTabId, setSavedTabId] = useState<number>(0);
   const activeTabIdRef = useRef(activeTabId);
   const watchTogetherUrlRef = useRef(watchTogetherURL);
-  const [hoveredTab, setHoveredTab] = useState<number | null>(null);
-  const [hoveredTabSaved, setHoveredTabSaved] = useState<number | null>(null);
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
-
+  const [tabGroups, setTabGroups] = useState<tabGroup[]>([]);
+  const [tabGroupId, setTabGroupId] = useState<number>(0);
+  const [activeTabGroup, setActiveTabGroup] = useState<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
+    useState<boolean>(false);
+  const [title, setTitle] = useState<string>("");
   interface savedTab {
     id: number;
     url: string;
     favicon?: string;
+  }
+
+  interface tabGroup {
+    id: number;
+    title: string;
+    tabs: tab[];
   }
 
   interface tab {
@@ -178,6 +191,77 @@ export default function BrowserLayout() {
     title?: string;
     favIcon?: string;
   }
+
+  const createNewTabGroup = () => {
+    const newTabGroup = {
+      id: tabGroupId,
+      title: title,
+      tabs: [],
+    };
+    setTabGroupId(tabGroupId + 1);
+    setTabGroups((prev) => [...prev, newTabGroup]);
+  };
+
+  const addTabToTabGroup = (url: string) => {
+    const origin = new URL(url).origin;
+    const newTab = {
+      id: nextId,
+      url: url,
+      favIcon: origin + "/favicon.ico",
+    };
+
+    setTabGroups((prevgroup) =>
+      prevgroup.map((group) =>
+        group.id == activeTabGroup
+          ? {
+              ...group,
+
+              tabs: [...group.tabs, newTab],
+            }
+          : group
+      )
+    );
+
+    setNextId((prev) => prev + 1);
+  };
+
+  const removeFromTabGroup = (id: number) => {
+    setTabGroups((prevgroup) =>
+      prevgroup.map((group) =>
+        group.id == activeTabGroup
+          ? {
+              ...group,
+
+              tabs: group.tabs.filter((tab) => tab.id !== id),
+            }
+          : group
+      )
+    );
+  };
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const groupWidth = container.clientWidth;
+      const scrollLeft = container.scrollLeft;
+
+      // Use floor instead of round for more accurate calculation
+      const newActiveGroup = Math.floor(
+        (scrollLeft + groupWidth / 2) / groupWidth
+      );
+
+      // Ensure we don't go out of bounds
+      const clampedActiveGroup = Math.max(
+        0,
+        Math.min(newActiveGroup, tabGroups.length - 1)
+      );
+
+      if (clampedActiveGroup !== activeTabGroup) {
+        console.log(`Switching to tab group: ${clampedActiveGroup}`);
+        setActiveTabGroup(clampedActiveGroup);
+      }
+    }
+  };
 
   function extractYouTubeVideoID(url: string): string | null {
     try {
@@ -1413,8 +1497,6 @@ export default function BrowserLayout() {
                   {savedTabs.map((tab) => (
                     <Button
                       key={`grid-${tab.id}`}
-                      onMouseEnter={() => setHoveredTabSaved(tab.id)}
-                      onMouseLeave={() => setHoveredTabSaved(null)}
                       onClick={() => addNewTab(tab.url)}
                       variant="ghost"
                       style={{ backgroundColor: activeTheme?.secondary }}
@@ -1466,7 +1548,189 @@ export default function BrowserLayout() {
                   New tab
                 </Button>
               </div>
+              <div
+                ref={scrollContainerRef}
+                className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
+                style={{ maxHeight: "65vh" }}
+                onScroll={handleScroll}
+              >
+                {tabGroups.map((tabGroup, groupIndex) => (
+                  <div
+                    key={groupIndex}
+                    className="flex-shrink-0 w-full snap-start"
+                  >
+                    <h1 className="text-center text-gray-400">
+                      {tabGroup.title}
+                    </h1>
+                    <div className="mb-3 ">
+                      <Button
+                        onClick={() => {
+                          setAddNewTabSearchBarWorkspace(true);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className=" w-full justify-center text-gray-400 hover:bg-transparent hover:text-gray-500  "
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        New tab
+                      </Button>
+                    </div>
+                    <div className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2">
+                      {tabGroup.tabs.map((tab) =>
+                        tab.id === activeTabId && splitViewId !== null ? (
+                          <div key={tab.id} className="mb-2 relative group">
+                            <button
+                              onClick={() => switchToTab(tab.id)}
+                              className={`w-full h-10 flex items-center justify-center text-left px-3 rounded ${
+                                activeTabId === tab.id
+                                  ? "border border-blue-500"
+                                  : "border-none hover:bg-zinc-600"
+                              } rounded-lg bg-zinc-700`}
+                            >
+                              <div className="flex w-full gap-1">
+                                <div
+                                  onMouseEnter={() => setHoveredTab(tab.id)}
+                                  onMouseLeave={() => setHoveredTab(null)}
+                                  className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1"
+                                >
+                                  {tab.favIcon && (
+                                    <img
+                                      src={tab.favIcon || "/placeholder.svg"}
+                                      alt="favicon"
+                                      className="w-4 h-4 mr-2"
+                                      onError={(e) =>
+                                        (e.currentTarget.style.display = "none")
+                                      }
+                                    />
+                                  )}
+                                  <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
+                                    {tab.title}
+                                  </p>
+                                  {hoveredTab === tab.id && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFromTabGroup(tab.id);
+                                      }}
+                                      className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                    >
+                                      <X className="h-3 w-3 text-white" />
+                                    </button>
+                                  )}
+                                </div>
 
+                                {(() => {
+                                  const splitTab = tabGroup.tabs.find(
+                                    (t) => t.id === splitViewId
+                                  );
+                                  if (!splitTab) return null;
+                                  return (
+                                    <div
+                                      onMouseEnter={() =>
+                                        setHoveredTab(splitViewId)
+                                      }
+                                      onMouseLeave={() => setHoveredTab(null)}
+                                      className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1"
+                                    >
+                                      <img
+                                        src={
+                                          splitTab.favIcon ||
+                                          "/placeholder.svg?height=16&width=16"
+                                        }
+                                        alt="favicon"
+                                        className="w-4 h-4 mr-2"
+                                        onError={(e) =>
+                                          (e.currentTarget.style.display =
+                                            "none")
+                                        }
+                                      />
+                                      <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
+                                        {splitTab.title}
+                                      </p>
+                                      {hoveredTab === splitViewId && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeFromTabGroup(splitViewId);
+                                          }}
+                                          className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                        >
+                                          <X className="h-3 w-3 text-white" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </button>
+                          </div>
+                        ) : (
+                          <div key={tab.id} className="mb-2 relative group">
+                            <button
+                              onClick={() => switchToTab(tab.id)}
+                              className={`w-full h-10 flex items-center justify-start text-left px-3 rounded ${
+                                tab.id === activeTabId
+                                  ? "border border-blue-500"
+                                  : "border-none hover:bg-zinc-600"
+                              } rounded-lg bg-zinc-700`}
+                            >
+                              {tab.favIcon && (
+                                <img
+                                  src={tab.favIcon || "/placeholder.svg"}
+                                  alt="favicon"
+                                  className="w-5 h-5 mr-2"
+                                  onError={(e) =>
+                                    (e.currentTarget.style.display = "none")
+                                  }
+                                />
+                              )}
+                              <div className="truncate flex-1 text-sm mr-2 text-white">
+                                {tab.title || tab.url}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeFromTabGroup(tab.id);
+                                  }}
+                                  className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                >
+                                  <X className="h-3 w-3 text-white hover:text-gray-400" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (activeTabId !== tab.id) {
+                                      if (
+                                        splitViewId !== null &&
+                                        splitViewId === tab.id
+                                      ) {
+                                        setSplitViewId(null);
+                                      } else {
+                                        setSplitViewId(tab.id);
+                                      }
+                                    }
+                                  }}
+                                  className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                >
+                                  <Scale
+                                    className={`h-3 w-3 ${
+                                      splitViewId === tab.id &&
+                                      activeTabId !== tab.id
+                                        ? "text-green-500"
+                                        : "text-white hover:text-gray-400"
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+                            </button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
                   tab.id == activeTabId && splitViewId !== null ? (
@@ -1629,6 +1893,39 @@ export default function BrowserLayout() {
             </div>
 
             <div className="flex justify-between w-[20%]">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    style={{ backgroundColor: activeTheme?.secondary }}
+                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                  >
+                    <AppWindow></AppWindow>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Tab Group</DialogTitle>
+                    <DialogDescription>
+                      Create a new Tab Group
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Input
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                    }}
+                    className="text-white"
+                    placeholder="Title"
+                  ></Input>
+                  <Button
+                    onClick={() => {
+                      createNewTabGroup();
+                    }}
+                    className="bg-zinc-800"
+                  >
+                    Create new Tab Group
+                  </Button>
+                </DialogContent>
+              </Dialog>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
@@ -1880,6 +2177,101 @@ export default function BrowserLayout() {
                         className="rounded-full w-8 h-8"
                       ></Button>
                     ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Dialog
+                open={addNewTabSearchBarWorkspace}
+                onOpenChange={() => {
+                  setAddNewTabSearchBarWorkspace(false);
+                }}
+              >
+                <DialogContent className="bg-zinc-900 border-zinc-700 max-w-[500px] p-0 gap-0">
+                  <div className="flex items-center gap-3 p-4 border-b border-zinc-700">
+                    <Search className="text-zinc-400 w-5 h-5 flex-shrink-0" />
+                    <Input
+                      value={currentUrl}
+                      onChange={(e) => {
+                        setCurrentUrl(e.target.value);
+                      }}
+                      className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+                      placeholder="Search..."
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="max-h-[400px] overflow-y-auto">
+                    {suggestions.length > 0 ? (
+                      <div className="p-2">
+                        {suggestions.map((suggestion, index) => {
+                          const url = new URL(suggestion);
+                          const domain = url.hostname.replace("www.", "");
+                          const serviceName = domain.split(".")[0];
+
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                              onClick={() => {
+                                addTabToTabGroup(suggestion);
+                                setAddNewTabSearchBarWorkspace(false);
+                              }}
+                            >
+                              <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                                <img
+                                  src={`${url.origin}/favicon.ico`}
+                                  alt={`${serviceName} favicon`}
+                                  className="w-5 h-5 rounded-sm"
+                                />
+                                <div className="w-5 h-5 bg-zinc-700 rounded-sm items-center justify-center text-xs text-zinc-400 hidden">
+                                  {serviceName.charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="text-white font-medium capitalize text-sm">
+                                  {serviceName}
+                                </div>
+                                <div className="text-zinc-400 text-xs truncate">
+                                  {suggestion}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <>
+                        {currentUrl.length > 0 ? (
+                          <div className="w-full px-3 overflow-hidden">
+                            <Button
+                              onClick={() => {
+                                addTabToTabGroup(
+                                  `https://www.google.com/search?q=${encodeURIComponent(
+                                    currentUrl
+                                  )}`
+                                );
+                                setAddNewTabSearchBarWorkspace(false);
+                              }}
+                              className="bg-zinc-600 hover:bg-zinc-600 p-6 rounded-lg mt-2 mb-2 w-full truncate"
+                            >
+                              <Search></Search>
+                              {currentUrl} — Search with Google
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12 px-4">
+                            <Search className="w-12 h-12 text-zinc-600 mb-3" />
+                            <h3 className="text-zinc-400 font-medium text-sm">
+                              No Results Found
+                            </h3>
+                            <p className="text-zinc-500 text-xs mt-1 text-center">
+                              Try searching for a different term
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </DialogContent>
               </Dialog>
