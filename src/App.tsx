@@ -47,6 +47,8 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Separator } from "./components/ui/separator";
+import { Badge } from "./components/ui/badge";
 declare global {
   interface Window {
     electronAPI?: {
@@ -1541,34 +1543,29 @@ export default function BrowserLayout() {
                 </div>
               </div>
             </div>
-            <div className="flex-1 p-3 mt-5 ">
-              <div className="mb-3 ">
-                <Button
-                  onClick={() => {
-                    setAddNewTabSearchBar(true);
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New tab
-                </Button>
-              </div>
+
+            <Separator className="bg-zinc-700 " />
+
+            <div className="flex-1 p-3  ">
               <div
                 ref={scrollContainerRef}
                 className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
-                style={{ maxHeight: "65vh" }}
+                style={{
+                  maxHeight: "65vh",
+                  scrollbarColor: `${activeTheme.secondary} ${activeTheme.hex}`,
+                }}
                 onScroll={handleScroll}
               >
                 {tabGroups.map((tabGroup, groupIndex) => (
                   <div
                     key={groupIndex}
-                    className="flex-shrink-0 w-full snap-start"
+                    className="flex-shrink-0 w-full snap-start mb-2"
                   >
-                    <h1 className="text-center text-gray-400">
-                      {tabGroup.title}
-                    </h1>
+                    <div className="flex justify-center items-center">
+                      <Badge className=" bg-zinc-700 mb-5">
+                        {tabGroup.title}
+                      </Badge>
+                    </div>
                     <div className="mb-3 ">
                       <Button
                         onClick={() => {
@@ -1576,7 +1573,7 @@ export default function BrowserLayout() {
                         }}
                         variant="ghost"
                         size="sm"
-                        className=" w-full justify-center text-gray-400 hover:bg-transparent hover:text-gray-500  "
+                        className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         New tab
@@ -1702,7 +1699,7 @@ export default function BrowserLayout() {
                                   }}
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
-                                  <X className="h-3 w-3 text-white hover:text-gray-400" />
+                                  <X className="h-4 w-4 text-white hover:text-gray-400" />
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -1720,8 +1717,8 @@ export default function BrowserLayout() {
                                   }}
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
-                                  <Scale
-                                    className={`h-3 w-3 ${
+                                  <Scaling
+                                    className={`h-4 w-4 ${
                                       splitViewId === tab.id &&
                                       activeTabId !== tab.id
                                         ? "text-green-500"
@@ -1737,6 +1734,20 @@ export default function BrowserLayout() {
                     </div>
                   </div>
                 ))}
+              </div>
+              <Separator className=" mt-5 mb-7 bg-zinc-700" />
+              <div className="mb-3 ">
+                <Button
+                  onClick={() => {
+                    setAddNewTabSearchBar(true);
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New tab
+                </Button>
               </div>
               <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
