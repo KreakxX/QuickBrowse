@@ -204,6 +204,12 @@ export default function BrowserLayout() {
     setTabGroups((prev) => [...prev, newTabGroup]);
   };
 
+  const deleteTabGroup = (id: number) => {
+    const filteredTabs = tabGroups.filter((group) => group.id + 1 == id);
+    setTabGroupId(tabGroupId - 1);
+    setTabGroups(filteredTabs);
+  };
+
   const addTabToTabGroup = (url: string) => {
     const origin = new URL(url).origin;
     const newTab = {
@@ -243,7 +249,6 @@ export default function BrowserLayout() {
       )
     );
   };
-
   const getAllTabs = () => {
     const normalTabs = tabs;
     const groupTabs = tabGroups.flatMap((group) => group.tabs);
@@ -1584,9 +1589,23 @@ export default function BrowserLayout() {
                     key={groupIndex}
                     className="flex-shrink-0 w-full snap-start mb-2"
                   >
-                    <h2 className="text-gray-400 font-semibold text-sm mb-5">
-                      {tabGroup.title}
-                    </h2>
+                    <ContextMenu>
+                      <ContextMenuTrigger>
+                        <h2 className="text-gray-400 font-semibold text-sm mb-5 ml-2">
+                          {tabGroup.title}
+                        </h2>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTabGroup(tabGroup.id);
+                          }}
+                        >
+                          Delete
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                     <div className="mb-3 ">
                       <Button
                         onClick={() => {
