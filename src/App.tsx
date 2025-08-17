@@ -404,7 +404,7 @@ export default function BrowserLayout() {
       if (!activeWebView) return;
 
       const handleNavigate = (event: any, id: number) => {
-        console.log("Navigation detected:", event.url); // Add this line
+        console.log("Navigation detected:", event.url);
         const newUrl = event.url;
 
         if (id === activeTabId) {
@@ -428,16 +428,28 @@ export default function BrowserLayout() {
           newUrl,
           new URL(newUrl).origin + "/favicon.ico"
         );
-
         if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "url_changed",
-              tabId: id,
-              newUrl: newUrl,
-              favicon: new URL(newUrl).origin + "/favicon.ico",
-            })
-          );
+          if (tabGroups.length == 0) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "url_changed",
+                tabId: id,
+                newUrl: newUrl,
+                favicon: new URL(newUrl).origin + "/favicon.ico",
+              })
+            );
+          } else {
+            if (activeTabGroup == 0) {
+              wsRef.current.send(
+                JSON.stringify({
+                  type: "url_changed",
+                  tabId: id,
+                  newUrl: newUrl,
+                  favicon: new URL(newUrl).origin + "/favicon.ico",
+                })
+              );
+            }
+          }
         }
       };
 
@@ -518,7 +530,7 @@ export default function BrowserLayout() {
     return () => {
       if (cleanup) cleanup();
     };
-  }, [activeTabId, splitViewId, shared]);
+  }, [activeTabId, activeTabGroup, splitViewId, shared]);
 
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   const [sessionJoined, setSessionJoined] = useState<boolean>(false);
@@ -1629,11 +1641,13 @@ export default function BrowserLayout() {
                           <div key={tab.id} className="mb-2 relative group">
                             <button
                               onClick={() => switchToTab(tab.id)}
-                              className={`w-full h-10 flex items-center justify-center text-left px-3 rounded ${
-                                activeTabId === tab.id
-                                  ? "border border-blue-500"
-                                  : "border-none hover:bg-zinc-600"
-                              } rounded-lg bg-zinc-700`}
+                              className={`w-full h-10 flex  items-center justify-start text-left px-3 rounded ${
+                                tab.id === activeTabIdSession && shared
+                                  ? " border border-green-500"
+                                  : tab.id === activeTabId
+                                  ? " border border-blue-500"
+                                  : " border-none hover:bg-zinc-600"
+                              } rounded-lg`}
                             >
                               <div className="flex w-full gap-1">
                                 <div
@@ -1724,11 +1738,13 @@ export default function BrowserLayout() {
                           <div key={tab.id} className="mb-2 relative group">
                             <button
                               onClick={() => switchToTab(tab.id)}
-                              className={`w-full h-10 flex items-center justify-start text-left px-3 rounded ${
-                                tab.id === activeTabId
-                                  ? "border border-blue-500"
-                                  : "border-none hover:bg-zinc-600"
-                              } rounded-lg bg-zinc-700`}
+                              className={`w-full h-10 bg-zinc-700 flex items-center justify-start text-left px-3 rounded ${
+                                tab.id === activeTabIdSession && shared
+                                  ? " border border-green-500"
+                                  : tab.id === activeTabId
+                                  ? " border border-blue-500"
+                                  : " border-none hover:bg-zinc-600"
+                              } rounded-lg`}
                             >
                               {tab.favIcon && (
                                 <img
