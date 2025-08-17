@@ -401,7 +401,7 @@ export default function BrowserLayout() {
   // gucken was man alles easy sharen kann
   useEffect(() => {
     const handleWebViewEvents = () => {
-      const activeWebView = webviewRefs.current[activeTabId];
+      const activeWebView = webviewRefs.current[activeTabId] as any;
       if (!activeWebView) return;
 
       const handleNavigate = (event: any, id: number) => {
@@ -500,7 +500,77 @@ export default function BrowserLayout() {
         handleNavigateActive
       );
 
-      // Cleanup function to remove event listeners
+      const handleScrollTracking = () => {
+        setTimeout(() => {
+          activeWebView
+            .executeJavaScript(
+              `
+        try {
+        
+          if (typeof window === 'undefined' || typeof document === 'undefined') {
+            throw new Error('Window or document not available');
+          }
+          
+          const throttle = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => func.apply(null, args), delay);
+            };
+          };
+
+          const scrollHandler = throttle(() => {
+            const scrollData = {
+              scrollTop: window.pageYOffset || document.documentElement.scrollTop,
+              scrollLeft: window.pageXOffset || document.documentElement.scrollLeft,
+              scrollHeight: document.documentElement.scrollHeight,
+              clientHeight: window.innerHeight
+            };
+            
+            console.log('SCROLL_DATA:', JSON.stringify(scrollData));
+          }, 40);
+
+          window.addEventListener('scroll', scrollHandler, { passive: true });
+          document.addEventListener('scroll', scrollHandler, { passive: true });
+          
+        } catch (error) {
+          console.error('Error in scroll tracking:', error.message);
+        }
+      `
+            )
+            .catch((err: any) =>
+              console.error("Failed to inject scroll tracking:", err)
+            );
+        }, 1000);
+      };
+
+      activeWebView.addEventListener("did-finish-load", handleScrollTracking);
+      activeWebView.addEventListener("dom-ready", handleScrollTracking);
+
+      const handleConsoleMessage = (e: any) => {
+        if (e.message.includes("SCROLL_DATA:")) {
+          const scrollData = JSON.parse(e.message.replace("SCROLL_DATA:", ""));
+          console.log("Scroll detected:", scrollData);
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            alert("Not connected to server");
+            return;
+          }
+
+          wsRef.current.send(
+            JSON.stringify({
+              type: "scrolled",
+              newYScrolled: scrollData.scrollTop,
+              newXScrolled: scrollData.scrollLeft,
+              TabId: activeTabId,
+            })
+          );
+
+          // websocket logic
+        }
+      };
+
+      activeWebView.addEventListener("console-message", handleConsoleMessage);
+
       return () => {
         if (splitViewId && splitNavigateHandler) {
           const splitViewWebView = webviewRefs.current[splitViewId];
@@ -616,6 +686,15 @@ export default function BrowserLayout() {
         break;
       case "youtube_pause":
         pausevideo();
+        break;
+      case "scrolled":
+        const activeWebView = webviewRefs.current[data.TabId] as any;
+        activeWebView.executeJavaScript(`
+        window.scrollTo({
+        top: ${data.newYScrolled},
+        behavior: 'smooth'
+        });
+        `);
         break;
       case "skipped_forward":
         skipForward(data.time);
@@ -998,19 +1077,19 @@ export default function BrowserLayout() {
     setMessageInput("");
   };
 
-  // const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  //   if (e.key === "Enter") {
-  //     setUrl(currentUrl);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      setUrl(currentUrl);
 
-  //     setTabs((prevTabs) =>
-  //       prevTabs.map((tab) =>
-  //         tab.id === activeTabId
-  //           ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
-  //           : tab
-  //       )
-  //     );
-  //   }
-  // };
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTabId
+            ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
+            : tab
+        )
+      );
+    }
+  };
 
   const switchToTab = (tabId: number) => {
     setActiveTabId(tabId);
@@ -1305,6 +1384,7 @@ export default function BrowserLayout() {
                   <Input
                     onFocus={() => setInputFocused(true)}
                     onBlur={() => setInputFocused(false)}
+                    onKeyDown={handleKeyDown}
                     value={currentUrl}
                     onChange={(e) => {
                       setCurrentUrl(e.target.value);
@@ -1388,7 +1468,7 @@ export default function BrowserLayout() {
                         </Button>
                       </DialogTrigger>
                       <DialogContent
-                        style={{ backgroundColor: activeTheme?.secondary }}
+                        style={{ backgroundColor: activeTheme?.hex }}
                         className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0  border-none"
                       >
                         <DialogHeader>
@@ -1401,7 +1481,7 @@ export default function BrowserLayout() {
                         </DialogHeader>
                         <Tabs defaultValue="join" className="w-full">
                           <TabsList
-                            style={{ backgroundColor: activeTheme?.hex }}
+                            style={{ backgroundColor: activeTheme?.secondary }}
                             className="w-full bg-zinc-700"
                           >
                             <TabsTrigger
@@ -1480,7 +1560,7 @@ export default function BrowserLayout() {
                                 joinSession();
                               }}
                               style={{
-                                backgroundColor: activeTheme?.hex,
+                                backgroundColor: activeTheme?.secondary,
                               }}
                               className="w-full"
                             >
@@ -1507,7 +1587,7 @@ export default function BrowserLayout() {
                                 createSession();
                               }}
                               style={{
-                                backgroundColor: activeTheme?.hex,
+                                backgroundColor: activeTheme?.secondary,
                               }}
                               className="w-full"
                             >
@@ -1521,7 +1601,7 @@ export default function BrowserLayout() {
                                 closeSession();
                               }}
                               style={{
-                                backgroundColor: activeTheme?.hex,
+                                backgroundColor: activeTheme?.secondary,
                               }}
                               className="w-full mt-10"
                             >
