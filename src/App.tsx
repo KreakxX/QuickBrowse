@@ -439,6 +439,17 @@ export default function BrowserLayout() {
               : tab
           )
         );
+
+        setTabGroups((groups) =>
+          groups.map((group) => ({
+            ...group,
+            tabs: group.tabs.map((tab) =>
+              tab.id === activeTabId
+                ? { ...tab, title: event.title || tab.title }
+                : tab
+            ),
+          }))
+        );
       };
       const handleNavigateActive = (e: any) => handleNavigate(e, activeTabId);
       let splitNavigateHandler: ((e: any) => void) | null = null;
@@ -2634,7 +2645,9 @@ export default function BrowserLayout() {
                 />
                 {splitViewId != null &&
                   (() => {
-                    const tab = tabs.find((tab) => tab.id === splitViewId);
+                    const tab = getAllTabs().find(
+                      (tab) => tab.id === splitViewId
+                    );
                     console.log(tab);
                     if (!tab) {
                       return;
