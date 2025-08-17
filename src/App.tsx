@@ -87,8 +87,10 @@ declare global {
 }
 
 export default function BrowserLayout() {
-  const [url, setUrl] = useState("https://google.com/");
-  const [currentUrl, setCurrentUrl] = useState<string>("https://google.com/");
+  const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
+  const [currentUrl, setCurrentUrl] = useState<string>(
+    "https://quickbrowse.vercel.app"
+  );
   const [showSidebar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
   const [isResizing, setIsResizing] = useState<boolean>(false);
@@ -127,12 +129,13 @@ export default function BrowserLayout() {
   }
   // good #3f3f4666
   const [activeTheme, setActiveTheme] = useState<color>({
-    name: "default",
-    hex: "#27272a",
-    secondary: "#3f3f4666",
+    name: "dark",
+    hex: "#09090b",
+    secondary: "#18181b",
   });
 
   const colors = [
+    { name: "dark", hex: "#09090b", secondary: "#18181b" },
     { name: "default", hex: "#27272a", secondary: "#3f3f4666" },
     { name: "pastelBlue", hex: "#AEC6CF", secondary: "#90ACB7" },
     { name: "pastelGreen", hex: "#B2F2BB", secondary: "#91D4A0" },
@@ -319,8 +322,8 @@ export default function BrowserLayout() {
   const [tabs, setTabs] = useState<tab[]>([
     {
       id: 0,
-      url: "https://google.com",
-      favIcon: "https://google.com/favicon.ico",
+      url: "https://quickbrowse.vercel.app/",
+      favIcon: "https://quickbrowse.vercel.app/favicon.ico",
     },
   ]);
 
@@ -1081,13 +1084,19 @@ export default function BrowserLayout() {
     if (e.key === "Enter") {
       setUrl(currentUrl);
 
-      setTabs((prevTabs) =>
-        prevTabs.map((tab) =>
-          tab.id === activeTabId
-            ? { ...tab, url: currentUrl, favIcon: currentUrl + "/favicon.ico" }
-            : tab
-        )
-      );
+      if (activeTabGroup == 0) {
+        setTabs((prevTabs) =>
+          prevTabs.map((tab) =>
+            tab.id === activeTabId
+              ? {
+                  ...tab,
+                  url: currentUrl,
+                  favIcon: currentUrl + "/favicon.ico",
+                }
+              : tab
+          )
+        );
+      }
     }
   };
 
@@ -1311,6 +1320,8 @@ export default function BrowserLayout() {
     return `repeat(${cols}, 1fr)`;
   };
 
+  const ActiveTabCurrentUrl = tabs.find((tab) => tab.id == activeTabId);
+
   return (
     <div className="h-screen bg-zinc-800   text-white flex flex-col ">
       <div className="flex h-full w-full overflow-hidden justify-between">
@@ -1381,18 +1392,29 @@ export default function BrowserLayout() {
                   style={{ borderColor: activeTheme.secondary }}
                   className="flex items-center gap-3 px-4 border-b "
                 >
-                  <Input
-                    onFocus={() => setInputFocused(true)}
-                    onBlur={() => setInputFocused(false)}
-                    onKeyDown={handleKeyDown}
-                    value={currentUrl}
-                    onChange={(e) => {
-                      setCurrentUrl(e.target.value);
-                    }}
-                    className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
-                    placeholder="Search..."
-                    autoFocus
-                  />
+                  <div className="flex ">
+                    <img
+                      className="h-5 w-5 mt-2"
+                      src={
+                        ActiveTabCurrentUrl?.favIcon?.includes("google")
+                          ? "https://google.com/favicon.ico"
+                          : ActiveTabCurrentUrl?.favIcon
+                      }
+                      alt=""
+                    />
+                    <Input
+                      onFocus={() => setInputFocused(true)}
+                      onBlur={() => setInputFocused(false)}
+                      onKeyDown={handleKeyDown}
+                      value={currentUrl}
+                      onChange={(e) => {
+                        setCurrentUrl(e.target.value);
+                      }}
+                      className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+                      placeholder="Search..."
+                      autoFocus
+                    />
+                  </div>
                 </div>
 
                 <div className="max-h-[400px] overflow-y-auto">
@@ -1854,7 +1876,7 @@ export default function BrowserLayout() {
                                   }}
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
-                                  <X className="h-4 w-4 text-white hover:text-gray-400" />
+                                  <X className="h-4 w-4 text-white " />
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -1877,7 +1899,7 @@ export default function BrowserLayout() {
                                       splitViewId === tab.id &&
                                       activeTabId !== tab.id
                                         ? "text-green-500"
-                                        : "text-white hover:text-gray-400"
+                                        : "text-white"
                                     }`}
                                   />
                                 </button>
@@ -2096,7 +2118,6 @@ export default function BrowserLayout() {
                 ))}
               </div>
             ) : null}
-            <Separator className="mt-2 mb-3 bg-zinc-600"></Separator>
             <div className="flex justify-between w-[20%]">
               <Dialog
                 open={TabGroupOpen}
