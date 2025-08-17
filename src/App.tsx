@@ -127,37 +127,190 @@ export default function BrowserLayout() {
     name: string;
     hex: string;
     secondary: string;
+    secondary2: string;
+    acsent: string;
   }
   // good #3f3f4666
   const [activeTheme, setActiveTheme] = useState<color>({
     name: "dark",
     hex: "#09090b",
     secondary: "#18181b",
+    secondary2: "#27272a",
+    acsent: "#6366f1",
   });
 
   const colors = [
-    { name: "dark", hex: "#09090b", secondary: "#18181b" },
-    { name: "default", hex: "#27272a", secondary: "#3f3f4666" },
-    { name: "pastelBlue", hex: "#AEC6CF", secondary: "#90ACB7" },
-    { name: "pastelGreen", hex: "#B2F2BB", secondary: "#91D4A0" },
-    { name: "pastelPink", hex: "#FFD1DC", secondary: "#E6AAB8" },
-    { name: "pastelPurple", hex: "#CBAACB", secondary: "#A98AA9" },
-    { name: "pastelYellow", hex: "#FFF5BA", secondary: "#E6D998" },
-    { name: "mint", hex: "#AAF0D1", secondary: "#8BD3B6" },
-    { name: "babyBlue", hex: "#BFEFFF", secondary: "#9ACDDC" },
-    { name: "lavender", hex: "#E6E6FA", secondary: "#CFCFE3" },
-    { name: "peach", hex: "#FFDAB9", secondary: "#E6BB93" },
-    { name: "lightCoral", hex: "#F08080", secondary: "#CC6666" },
-    { name: "seafoam", hex: "#9FE2BF", secondary: "#7FC1A1" },
-    { name: "lightLilac", hex: "#D8B7DD", secondary: "#B995BD" },
-    { name: "blush", hex: "#F9C6C9", secondary: "#DAA5A9" },
-    { name: "softTeal", hex: "#B2DFDB", secondary: "#8FC0BE" },
-    { name: "paleOrange", hex: "#FFD8B1", secondary: "#E6B48C" },
-    { name: "pastelCyan", hex: "#B2FFFF", secondary: "#90DCDC" },
-    { name: "lightRose", hex: "#FADADD", secondary: "#DCB8BB" },
-    { name: "honeydew", hex: "#F0FFF0", secondary: "#D1E6D1" },
-    { name: "powderBlue", hex: "#B0E0E6", secondary: "#8FC2C7" },
-    { name: "mist", hex: "#D6EAF8", secondary: "#B6C9D6" },
+    {
+      name: "dark",
+      hex: "#09090b",
+      secondary: "#18181b",
+      secondary2: "#27272a",
+      acsent: "#6366f1",
+    },
+    {
+      name: "default",
+      hex: "#27272a",
+      secondary: "#3f3f4666",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelBlue",
+      hex: "#AEC6CF",
+      secondary: "#90ACB7",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelGreen",
+      hex: "#B2F2BB",
+      secondary: "#91D4A0",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelPink",
+      hex: "#FFD1DC",
+      secondary: "#E6AAB8",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelPurple",
+      hex: "#CBAACB",
+      secondary: "#A98AA9",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelYellow",
+      hex: "#FFF5BA",
+      secondary: "#E6D998",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "mint",
+      hex: "#AAF0D1",
+      secondary: "#8BD3B6",
+      secondary2: "#27272a",
+      acsent: "#6366f1",
+    },
+    {
+      name: "babyBlue",
+      hex: "#BFEFFF",
+      secondary: "#9ACDDC",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "lavender",
+      hex: "#E6E6FA",
+      secondary: "#CFCFE3",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "peach",
+      hex: "#FFDAB9",
+      secondary: "#E6BB93",
+      secondary2: "#27272a",
+      acsent: "#6366f1",
+    },
+    {
+      name: "lightCoral",
+      hex: "#F08080",
+      secondary: "#CC6666",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "seafoam",
+      hex: "#9FE2BF",
+      secondary: "#7FC1A1",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "lightLilac",
+      hex: "#D8B7DD",
+      secondary: "#B995BD",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "blush",
+      hex: "#F9C6C9",
+      secondary: "#DAA5A9",
+      secondary2: "#27272a",
+      acsent: "#6366f1",
+    },
+    {
+      name: "softTeal",
+      hex: "#B2DFDB",
+      secondary: "#8FC0BE",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "paleOrange",
+      hex: "#FFD8B1",
+      secondary: "#E6B48C",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "pastelCyan",
+      hex: "#B2FFFF",
+      secondary: "#90DCDC",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "lightRose",
+      hex: "#FADADD",
+      secondary: "#DCB8BB",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "honeydew",
+      hex: "#F0FFF0",
+      secondary: "#D1E6D1",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "powderBlue",
+      hex: "#B0E0E6",
+      secondary: "#8FC2C7",
+      secondary2: "#27272a",
+
+      acsent: "#6366f1",
+    },
+    {
+      name: "mist",
+      hex: "#D6EAF8",
+      secondary: "#B6C9D6",
+      secondary2: "#27272a",
+      acsent: "#6366f1",
+    },
   ];
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [bookMarkTabs, setBookMarkTabs] = useState<
@@ -1289,11 +1442,9 @@ export default function BrowserLayout() {
       if (webviewContainer) {
         const rect = webviewContainer.getBoundingClientRect();
 
-        // calculate and use relative px
         const relativeX = e.clientX - rect.left;
         const relativeY = e.clientY - rect.top;
 
-        // boundary checks
         if (
           relativeX >= 0 &&
           relativeY >= 0 &&
@@ -1429,7 +1580,7 @@ export default function BrowserLayout() {
                         return (
                           <div
                             key={index}
-                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group"
                             onClick={() => addNewTab(suggestion)}
                           >
                             <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
@@ -1463,11 +1614,9 @@ export default function BrowserLayout() {
                     style={{
                       backgroundColor: !shareCursor
                         ? activeTheme?.secondary
-                        : undefined,
+                        : activeTheme.acsent,
                     }}
-                    className={` w-1/2 rounded-lg  mt-2 ${
-                      shareCursor ? "bg-green-600 hover:bg-green-600" : ""
-                    }`}
+                    className={` w-1/2 rounded-lg  mt-2 `}
                     onClick={() => {
                       setShareCursor(!shareCursor);
                     }}
@@ -1481,11 +1630,9 @@ export default function BrowserLayout() {
                           style={{
                             backgroundColor: !shared
                               ? activeTheme?.secondary
-                              : undefined,
+                              : activeTheme.acsent,
                           }}
-                          className={` w-full rounded-lg  mt-2 ${
-                            shared ? "bg-green-600 hover:bg-green-600" : ""
-                          }`}
+                          className={` w-full rounded-lg  mt-2`}
                         >
                           <Link></Link>
                         </Button>
@@ -1749,21 +1896,30 @@ export default function BrowserLayout() {
                         tab.id === activeTabId && splitViewId !== null ? (
                           <div key={tab.id} className="mb-2 relative group">
                             <button
-                              style={{ backgroundColor: activeTheme.secondary }}
-                              onClick={() => switchToTab(tab.id)}
-                              className={`w-full h-10 flex  items-center justify-start text-left px-3 rounded ${
+                              style={{
+                                backgroundColor: activeTheme.secondary,
+                                borderColor:
+                                  tab.id === activeTabIdSession && shared
+                                    ? activeTheme.acsent
+                                    : tab.id === activeTabId
+                                    ? "#52525b"
+                                    : undefined,
+                              }}
+                              className={`w-full h-10 ${
                                 tab.id === activeTabIdSession && shared
-                                  ? " border border-green-500"
+                                  ? "border"
                                   : tab.id === activeTabId
-                                  ? " border border-zinc-500"
-                                  : " border-none hover:bg-zinc-600"
-                              } rounded-lg`}
+                                  ? "border"
+                                  : "border-0"
+                              }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
+                              onClick={() => switchToTab(tab.id)}
                             >
                               <div className="flex w-full gap-1">
                                 <div
                                   onMouseEnter={() => setHoveredTab(tab.id)}
                                   onMouseLeave={() => setHoveredTab(null)}
-                                  className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1"
+                                  style={{ background: activeTheme.secondary2 }}
+                                  className="flex items-center flex-1 rounded px-2 py-1"
                                 >
                                   {tab.favIcon && (
                                     <img
@@ -1788,7 +1944,7 @@ export default function BrowserLayout() {
                                           removeFromTabGroup(tab.id);
                                         }
                                       }}
-                                      className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                      className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                     >
                                       <X className="h-3 w-3 text-zinc-400" />
                                     </button>
@@ -1806,7 +1962,10 @@ export default function BrowserLayout() {
                                         setHoveredTab(splitViewId)
                                       }
                                       onMouseLeave={() => setHoveredTab(null)}
-                                      className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1"
+                                      style={{
+                                        background: activeTheme.secondary2,
+                                      }}
+                                      className="flex items-center flex-1  rounded px-2 py-1"
                                     >
                                       <img
                                         src={
@@ -1833,7 +1992,7 @@ export default function BrowserLayout() {
                                               removeFromTabGroup(tab.id);
                                             }
                                           }}
-                                          className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                          className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                         >
                                           <X className="h-3 w-3 text-zinc-400" />
                                         </button>
@@ -1848,14 +2007,22 @@ export default function BrowserLayout() {
                           <div key={tab.id} className="mb-2 relative group">
                             <button
                               onClick={() => switchToTab(tab.id)}
-                              style={{ backgroundColor: activeTheme.secondary }}
-                              className={`w-full h-10  flex items-center justify-start text-left px-3 rounded ${
+                              style={{
+                                backgroundColor: activeTheme.secondary,
+                                borderColor:
+                                  tab.id === activeTabIdSession && shared
+                                    ? activeTheme.acsent
+                                    : tab.id === activeTabId
+                                    ? "#52525b"
+                                    : undefined,
+                              }}
+                              className={`w-full h-10 ${
                                 tab.id === activeTabIdSession && shared
-                                  ? " border border-green-500"
+                                  ? "border"
                                   : tab.id === activeTabId
-                                  ? " border border-zinc-500"
-                                  : " border-none hover:bg-zinc-600"
-                              } rounded-lg`}
+                                  ? "border"
+                                  : "border-0"
+                              }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
                             >
                               {tab.favIcon && (
                                 <img
@@ -1901,12 +2068,14 @@ export default function BrowserLayout() {
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
                                   <Scaling
-                                    className={`h-4 w-4 ${
-                                      splitViewId === tab.id &&
-                                      activeTabId !== tab.id
-                                        ? "text-green-500"
-                                        : "text-zinc-400"
-                                    }`}
+                                    style={{
+                                      color:
+                                        splitViewId === tab.id &&
+                                        activeTabId !== tab.id
+                                          ? activeTheme.acsent
+                                          : "#a1a1aa",
+                                    }}
+                                    className={`h-4 w-4 `}
                                   />
                                 </button>
                               </div>
@@ -2114,11 +2283,13 @@ export default function BrowserLayout() {
                     {" "}
                     <div
                       key={tabgroup.id}
-                      className={`h-2 w-2 rounded-full  ${
-                        tabgroup.id == activeTabGroup
-                          ? "bg-zinc-500"
-                          : "bg-zinc-600"
-                      }`}
+                      style={{
+                        backgroundColor:
+                          tabgroup.id == activeTabGroup
+                            ? activeTheme.acsent
+                            : activeTheme.secondary,
+                      }}
+                      className={`h-2 w-2 rounded-full `}
                     ></div>
                   </div>
                 ))}
@@ -2563,7 +2734,10 @@ export default function BrowserLayout() {
                   setAddNewTabSearchBar(false);
                 }}
               >
-                <DialogContent className="bg-zinc-900 border-zinc-700 max-w-[500px] p-0 gap-0">
+                <DialogContent
+                  style={{ backgroundColor: activeTheme.hex }}
+                  className=" border-zinc-800 max-w-[500px] p-0 gap-0"
+                >
                   <div className="flex items-center gap-3 p-4 border-b border-zinc-700">
                     <Search className="text-zinc-400 w-5 h-5 flex-shrink-0" />
                     <Input
@@ -2588,7 +2762,7 @@ export default function BrowserLayout() {
                           return (
                             <div
                               key={index}
-                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group"
                               onClick={() => {
                                 addNewTab(suggestion);
                                 setAddNewTabSearchBar(false);
@@ -2630,7 +2804,7 @@ export default function BrowserLayout() {
                                 );
                                 setAddNewTabSearchBar(false);
                               }}
-                              className="bg-zinc-600 hover:bg-zinc-600 p-6 rounded-lg mt-2 mb-2 w-full truncate"
+                              className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2 w-full truncate"
                             >
                               <Search></Search>
                               {currentUrl} — Search with Google
