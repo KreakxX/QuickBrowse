@@ -124,15 +124,15 @@ export default function BrowserLayout() {
     hex: string;
     secondary: string;
   }
-
+  // good #3f3f4666
   const [activeTheme, setActiveTheme] = useState<color>({
     name: "default",
     hex: "#27272a",
-    secondary: "#3f3f46",
+    secondary: "#3f3f4666",
   });
 
   const colors = [
-    { name: "default", hex: "#27272a", secondary: "#3f3f46" },
+    { name: "default", hex: "#27272a", secondary: "#3f3f4666" },
     { name: "pastelBlue", hex: "#AEC6CF", secondary: "#90ACB7" },
     { name: "pastelGreen", hex: "#B2F2BB", secondary: "#91D4A0" },
     { name: "pastelPink", hex: "#FFD1DC", secondary: "#E6AAB8" },
@@ -1232,12 +1232,12 @@ export default function BrowserLayout() {
   };
 
   return (
-    <div className="h-screen bg-zinc-800 text-white flex flex-col ">
+    <div className="h-screen bg-zinc-800   text-white flex flex-col ">
       <div className="flex h-full w-full overflow-hidden justify-between">
         {showSidebar ? (
           <div
             style={{ backgroundColor: activeTheme?.hex }}
-            className="w-64  border-r border-gray-700 flex flex-col"
+            className="w-64 border-none flex flex-col"
           >
             <div className="flex items-center space-x-2 ml-2 mt-2">
               <Button
@@ -1640,12 +1640,13 @@ export default function BrowserLayout() {
                         tab.id === activeTabId && splitViewId !== null ? (
                           <div key={tab.id} className="mb-2 relative group">
                             <button
+                              style={{ backgroundColor: activeTheme.secondary }}
                               onClick={() => switchToTab(tab.id)}
                               className={`w-full h-10 flex  items-center justify-start text-left px-3 rounded ${
                                 tab.id === activeTabIdSession && shared
                                   ? " border border-green-500"
                                   : tab.id === activeTabId
-                                  ? " border border-blue-500"
+                                  ? " border border-zinc-500"
                                   : " border-none hover:bg-zinc-600"
                               } rounded-lg`}
                             >
@@ -1738,11 +1739,12 @@ export default function BrowserLayout() {
                           <div key={tab.id} className="mb-2 relative group">
                             <button
                               onClick={() => switchToTab(tab.id)}
-                              className={`w-full h-10 bg-zinc-700 flex items-center justify-start text-left px-3 rounded ${
+                              style={{ backgroundColor: activeTheme.secondary }}
+                              className={`w-full h-10  flex items-center justify-start text-left px-3 rounded ${
                                 tab.id === activeTabIdSession && shared
                                   ? " border border-green-500"
                                   : tab.id === activeTabId
-                                  ? " border border-blue-500"
+                                  ? " border border-zinc-500"
                                   : " border-none hover:bg-zinc-600"
                               } rounded-lg`}
                             >
@@ -1982,7 +1984,7 @@ export default function BrowserLayout() {
               </div> */}
             </div>
             {getAllTabGroups().length >= 2 ? (
-              <div className="flex justify-center gap-2 mb-10">
+              <div className="flex justify-center gap-2 ">
                 {getAllTabGroups().map((tabgroup) => (
                   <div
                     onClick={() => {
@@ -1998,22 +2000,28 @@ export default function BrowserLayout() {
                         });
                       }
                     }}
-                    key={tabgroup.id}
-                    className={`h-3 w-3 rounded-full ${
-                      tabgroup.id == activeTabGroup
-                        ? "bg-zinc-500"
-                        : "bg-zinc-600"
-                    }`}
-                  ></div>
+                    className="p-3 rounded-md bg-transparent hover:bg-zinc-700/50"
+                  >
+                    {" "}
+                    <div
+                      key={tabgroup.id}
+                      className={`h-2 w-2 rounded-full  ${
+                        tabgroup.id == activeTabGroup
+                          ? "bg-zinc-500"
+                          : "bg-zinc-600"
+                      }`}
+                    ></div>
+                  </div>
                 ))}
               </div>
             ) : null}
+            <Separator className="mt-2 mb-3 bg-zinc-600"></Separator>
             <div className="flex justify-between w-[20%]">
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
                   >
                     <AppWindow></AppWindow>
                   </Button>
@@ -2046,7 +2054,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
                     onClick={() => {
                       loadBookMarks();
                     }}
@@ -2134,7 +2142,7 @@ export default function BrowserLayout() {
                       loadHistory();
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
                   >
                     <History></History>
                   </Button>
@@ -2208,7 +2216,7 @@ export default function BrowserLayout() {
                         loadHistory();
                       }}
                       style={{ backgroundColor: activeTheme?.secondary }}
-                      className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                      className="rounded-lg mb-3 ml-2 w-8 h-10 "
                     >
                       <Youtube size={30}></Youtube>
                     </Button>
@@ -2270,7 +2278,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-9 h-10 "
                   >
                     <Palette></Palette>
                   </Button>
@@ -2492,7 +2500,7 @@ export default function BrowserLayout() {
                     <DialogTrigger asChild>
                       <Button
                         style={{ backgroundColor: activeTheme?.secondary }}
-                        className="rounded-lg mb-3 ml-3 w-9 h-10 "
+                        className="rounded-lg mb-3 ml-2 w-8 h-10 "
                       >
                         <MessageCircle></MessageCircle>
                       </Button>
