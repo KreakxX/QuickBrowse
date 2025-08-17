@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -1493,6 +1494,11 @@ export default function BrowserLayout() {
                         style={{ backgroundColor: activeTheme?.hex }}
                         className="sm:max-w-[425px] top-20 left-3 translate-x-0 translate-y-0  border-none"
                       >
+                        <DialogClose asChild>
+                          <Button className="w-8 h-8">
+                            <X></X>
+                          </Button>
+                        </DialogClose>
                         <DialogHeader>
                           <DialogTitle className="text-white">
                             Session Settings
@@ -1509,8 +1515,8 @@ export default function BrowserLayout() {
                             <TabsTrigger
                               style={
                                 {
-                                  "--tab-bg": activeTheme?.hex,
-                                  "--tab-bg-active": activeTheme?.secondary, // fallback oder deine aktive Farbe
+                                  "--tab-bg": activeTheme?.secondary,
+                                  "--tab-bg-active": activeTheme?.hex, // fallback oder deine aktive Farbe
                                 } as React.CSSProperties
                               }
                               className="
@@ -1526,8 +1532,8 @@ export default function BrowserLayout() {
                             <TabsTrigger
                               style={
                                 {
-                                  "--tab-bg": activeTheme?.hex,
-                                  "--tab-bg-active": activeTheme?.secondary,
+                                  "--tab-bg": activeTheme?.secondary,
+                                  "--tab-bg-active": activeTheme?.hex,
                                 } as React.CSSProperties
                               }
                               className="
@@ -1544,8 +1550,8 @@ export default function BrowserLayout() {
                               <TabsTrigger
                                 style={
                                   {
-                                    "--tab-bg": activeTheme?.hex,
-                                    "--tab-bg-active": activeTheme?.secondary,
+                                    "--tab-bg": activeTheme?.secondary,
+                                    "--tab-bg-active": activeTheme?.hex,
                                   } as React.CSSProperties
                                 }
                                 className="
@@ -1784,7 +1790,7 @@ export default function BrowserLayout() {
                                       }}
                                       className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                     >
-                                      <X className="h-3 w-3 text-white" />
+                                      <X className="h-3 w-3 text-zinc-400" />
                                     </button>
                                   )}
                                 </div>
@@ -1829,7 +1835,7 @@ export default function BrowserLayout() {
                                           }}
                                           className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                         >
-                                          <X className="h-3 w-3 text-white" />
+                                          <X className="h-3 w-3 text-zinc-400" />
                                         </button>
                                       )}
                                     </div>
@@ -1876,7 +1882,7 @@ export default function BrowserLayout() {
                                   }}
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
-                                  <X className="h-4 w-4 text-white " />
+                                  <X className="h-4 w-4 text-zinc-400 " />
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -1899,7 +1905,7 @@ export default function BrowserLayout() {
                                       splitViewId === tab.id &&
                                       activeTabId !== tab.id
                                         ? "text-green-500"
-                                        : "text-white"
+                                        : "text-zinc-400"
                                     }`}
                                   />
                                 </button>
@@ -2087,7 +2093,7 @@ export default function BrowserLayout() {
               </div> */}
             </div>
             {getAllTabGroups().length >= 2 ? (
-              <div className="flex justify-center gap-2 ">
+              <div className="flex justify-center gap-2 mb-2 ">
                 {getAllTabGroups().map((tabgroup) => (
                   <div
                     onClick={() => {
@@ -2136,7 +2142,15 @@ export default function BrowserLayout() {
                     <AppWindow></AppWindow>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
+                <DialogContent
+                  className="max-w-[425px] border-zinc-800"
+                  style={{ background: activeTheme.hex }}
+                >
+                  <DialogClose asChild>
+                    <Button className="w-8 h-8">
+                      <X></X>
+                    </Button>
+                  </DialogClose>
                   <DialogHeader>
                     <DialogTitle className="text-white">Tab Group</DialogTitle>
                     <DialogDescription>
@@ -2147,9 +2161,10 @@ export default function BrowserLayout() {
                     onChange={(e) => {
                       setTitle(e.target.value);
                     }}
-                    className="text-white"
+                    className="text-white border-zinc-800"
                     placeholder="Title"
                   ></Input>
+
                   <Button
                     onClick={() => {
                       setTabGroupOpen(false);
@@ -2173,11 +2188,20 @@ export default function BrowserLayout() {
                     <Bookmark></Bookmark>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
+                <DialogContent
+                  style={{ backgroundColor: activeTheme.hex }}
+                  className="max-w-[425px]  border-zinc-800"
+                >
+                  <DialogClose asChild>
+                    <Button className="w-8 h-8">
+                      <X></X>
+                    </Button>
+                  </DialogClose>
                   <DialogHeader>
                     <DialogTitle className="text-white">Bookmarks</DialogTitle>
                     <DialogDescription>View your Bookmarks</DialogDescription>
                   </DialogHeader>
+
                   <ScrollArea className="h-[400px] pr-4">
                     <div className="space-y-2">
                       {bookMarkTabs.map((bookmark, index) => {
@@ -2191,7 +2215,8 @@ export default function BrowserLayout() {
                           >
                             <Button
                               onClick={() => addNewTab(bookmark.url)}
-                              className="w-full h-auto p-4 justify-start bg-zinc-800 hover:bg-zinc-700  rounded-lg"
+                              style={{ backgroundColor: activeTheme.secondary }}
+                              className="w-full h-auto p-4 justify-start   rounded-lg"
                             >
                               <div className="flex items-center gap-3 w-full min-w-0">
                                 {/* Favicon */}
@@ -2258,7 +2283,15 @@ export default function BrowserLayout() {
                     <History></History>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-[425px] bg-zinc-900 border-zinc-700">
+                <DialogContent
+                  style={{ backgroundColor: activeTheme.hex }}
+                  className="max-w-[425px] border-zinc-800"
+                >
+                  <DialogClose asChild>
+                    <Button className="w-8 h-8">
+                      <X></X>
+                    </Button>
+                  </DialogClose>
                   <DialogHeader>
                     <DialogTitle className="text-white">
                       Search History
@@ -2278,8 +2311,9 @@ export default function BrowserLayout() {
                           className=" relative  rounded-lg border-none mb-3"
                         >
                           <Button
+                            style={{ backgroundColor: activeTheme.secondary }}
                             onClick={() => addNewTab(history.url)}
-                            className="w-full h-auto p-4 justify-start bg-zinc-800 hover:bg-zinc-700  rounded-lg"
+                            className="w-full h-auto p-4 justify-start   rounded-lg"
                           >
                             <div className="flex items-center gap-3 w-full min-w-0">
                               {/* Favicon */}
@@ -2334,8 +2368,13 @@ export default function BrowserLayout() {
                   </DialogTrigger>
                   <DialogContent
                     style={{ backgroundColor: activeTheme?.hex }}
-                    className="max-w-[425px] border-none"
+                    className="max-w-[425px] border-zinc-800"
                   >
+                    <DialogClose asChild>
+                      <Button className="w-8 h-8">
+                        <X></X>
+                      </Button>
+                    </DialogClose>
                     <DialogHeader>
                       <DialogTitle className="text-white">
                         Watch Together
@@ -2361,11 +2400,11 @@ export default function BrowserLayout() {
                           onChange={(e) => {
                             setWatchTogetherCurrentURL(e.target.value);
                           }}
-                          className="text-white placeholder:text-white"
+                          className="text-white placeholder:text-white mt-2 mb-2"
                           placeholder="Enter Youtube URL"
                         ></Input>
                         <Button
-                          className="w-full mt-2"
+                          className="w-full mt-2 mb-2"
                           onClick={() => {
                             EnableWatchTogether();
                           }}
@@ -2396,8 +2435,13 @@ export default function BrowserLayout() {
                 </DialogTrigger>
                 <DialogContent
                   style={{ backgroundColor: activeTheme?.hex }}
-                  className="max-w-[425px] border-none"
+                  className="max-w-[425px] border-zinc-800"
                 >
+                  <DialogClose asChild>
+                    <Button className="w-8 h-8">
+                      <X></X>
+                    </Button>
+                  </DialogClose>
                   <DialogHeader>
                     <DialogTitle className="text-white">Themes</DialogTitle>
                     <DialogDescription>Choose your Theme</DialogDescription>
@@ -2421,7 +2465,10 @@ export default function BrowserLayout() {
                   setAddNewTabSearchBarWorkspace(false);
                 }}
               >
-                <DialogContent className="bg-zinc-900 border-zinc-700 max-w-[500px] p-0 gap-0">
+                <DialogContent
+                  style={{ backgroundColor: activeTheme.hex }}
+                  className="border-zinc-800 max-w-[500px] p-0 gap-0"
+                >
                   <div className="flex items-center gap-3 p-4 border-b border-zinc-700">
                     <Search className="text-zinc-400 w-5 h-5 flex-shrink-0" />
                     <Input
@@ -2446,7 +2493,7 @@ export default function BrowserLayout() {
                           return (
                             <div
                               key={index}
-                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer group"
+                              className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group"
                               onClick={() => {
                                 addTabToTabGroup(suggestion);
                                 setAddNewTabSearchBarWorkspace(false);
@@ -2488,7 +2535,7 @@ export default function BrowserLayout() {
                                 );
                                 setAddNewTabSearchBarWorkspace(false);
                               }}
-                              className="bg-zinc-600 hover:bg-zinc-600 p-6 rounded-lg mt-2 mb-2 w-full truncate"
+                              className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2 w-full truncate"
                             >
                               <Search></Search>
                               {currentUrl} — Search with Google
@@ -2621,6 +2668,11 @@ export default function BrowserLayout() {
                       style={{ backgroundColor: activeTheme?.hex }}
                       className="max-w-[425px]   border-none"
                     >
+                      <DialogClose asChild>
+                        <Button className="w-8 h-8">
+                          <X></X>
+                        </Button>
+                      </DialogClose>
                       <DialogHeader>
                         <DialogTitle className="text-white">
                           Session Chat
