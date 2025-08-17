@@ -169,8 +169,8 @@ export default function BrowserLayout() {
   const currentTimeRef = useRef(currentTime);
   const webviewRefs = useRef<{ [key: number]: HTMLElement | null }>({});
   const [tabGroups, setTabGroups] = useState<tabGroup[]>([]);
-  const [tabGroupId, setTabGroupId] = useState<number>(0);
-  const [activeTabGroup, setActiveTabGroup] = useState<number>(0);
+  const [tabGroupId, setTabGroupId] = useState<number>(1);
+  const [activeTabGroup, setActiveTabGroup] = useState<number>(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
     useState<boolean>(false);
@@ -250,21 +250,29 @@ export default function BrowserLayout() {
     return [...normalTabs, ...groupTabs];
   };
 
+  const getAllTabGroups = () => {
+    const baseTabGroup = {
+      id: 0,
+      title: "Base",
+      tabs: tabs,
+    };
+
+    return [baseTabGroup, ...tabGroups];
+  };
+
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       const groupWidth = container.clientWidth;
       const scrollLeft = container.scrollLeft;
 
-      // Use floor instead of round for more accurate calculation
       const newActiveGroup = Math.floor(
         (scrollLeft + groupWidth / 2) / groupWidth
       );
 
-      // Ensure we don't go out of bounds
       const clampedActiveGroup = Math.max(
         0,
-        Math.min(newActiveGroup, tabGroups.length - 1)
+        Math.min(newActiveGroup, getAllTabGroups().length - 1)
       );
 
       if (clampedActiveGroup !== activeTabGroup) {
@@ -1558,32 +1566,35 @@ export default function BrowserLayout() {
               </div>
             </div>
 
-            <Separator className="bg-zinc-700 " />
-
             <div className="flex-1 p-3  ">
               <div
                 ref={scrollContainerRef}
                 className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
                 style={{
                   maxHeight: "65vh",
-                  scrollbarColor: `${activeTheme.secondary} ${activeTheme.hex}`,
+                  minHeight: "65vh",
+                  overflowY: "scroll",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
                 }}
                 onScroll={handleScroll}
               >
-                {tabGroups.map((tabGroup, groupIndex) => (
+                {getAllTabGroups().map((tabGroup, groupIndex) => (
                   <div
                     key={groupIndex}
                     className="flex-shrink-0 w-full snap-start mb-2"
                   >
-                    <div className="flex justify-center items-center">
-                      <Badge className=" bg-zinc-700 mb-5">
-                        {tabGroup.title}
-                      </Badge>
-                    </div>
+                    <h2 className="text-gray-400 font-semibold text-sm mb-5">
+                      {tabGroup.title}
+                    </h2>
                     <div className="mb-3 ">
                       <Button
                         onClick={() => {
-                          setAddNewTabSearchBarWorkspace(true);
+                          if (tabGroup.title == "Base") {
+                            setAddNewTabSearchBar(true);
+                          } else {
+                            setAddNewTabSearchBarWorkspace(true);
+                          }
                         }}
                         variant="ghost"
                         size="sm"
@@ -1628,7 +1639,11 @@ export default function BrowserLayout() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        removeFromTabGroup(tab.id);
+                                        if (tabGroup.title == "Base") {
+                                          closeTab(tab.id);
+                                        } else {
+                                          removeFromTabGroup(tab.id);
+                                        }
                                       }}
                                       className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                     >
@@ -1669,7 +1684,11 @@ export default function BrowserLayout() {
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            removeFromTabGroup(splitViewId);
+                                            if (tabGroup.title == "Base") {
+                                              closeTab(tab.id);
+                                            } else {
+                                              removeFromTabGroup(tab.id);
+                                            }
                                           }}
                                           className="h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1 flex items-center justify-center"
                                         >
@@ -1709,7 +1728,11 @@ export default function BrowserLayout() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    removeFromTabGroup(tab.id);
+                                    if (tabGroup.title == "Base") {
+                                      closeTab(tab.id);
+                                    } else {
+                                      removeFromTabGroup(tab.id);
+                                    }
                                   }}
                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
                                 >
@@ -1749,8 +1772,8 @@ export default function BrowserLayout() {
                   </div>
                 ))}
               </div>
-              <Separator className=" mt-5 mb-7 bg-zinc-700" />
-              <div className="mb-3 ">
+
+              {/* <div className="mb-3 mt-5 ">
                 <Button
                   onClick={() => {
                     setAddNewTabSearchBar(true);
@@ -1762,8 +1785,8 @@ export default function BrowserLayout() {
                   <Plus className="h-4 w-4 mr-2" />
                   New tab
                 </Button>
-              </div>
-              <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
+              </div> */}
+              {/* <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
                 {tabs.map((tab) =>
                   tab.id == activeTabId && splitViewId !== null ? (
                     <div key={tab.id} className="mb-2 relative group">
@@ -1921,9 +1944,35 @@ export default function BrowserLayout() {
                     </div>
                   )
                 )}
-              </div>
+              </div> */}
             </div>
-
+            {getAllTabGroups().length >= 2 ? (
+              <div className="flex justify-center gap-2 mb-10">
+                {getAllTabGroups().map((tabgroup) => (
+                  <div
+                    onClick={() => {
+                      if (activeTabGroup > tabgroup.id) {
+                        scrollContainerRef.current?.scrollBy({
+                          left: -200,
+                          behavior: "smooth",
+                        });
+                      } else {
+                        scrollContainerRef.current?.scrollBy({
+                          left: 200,
+                          behavior: "smooth",
+                        });
+                      }
+                    }}
+                    key={tabgroup.id}
+                    className={`h-3 w-3 rounded-full ${
+                      tabgroup.id == activeTabGroup
+                        ? "bg-zinc-500"
+                        : "bg-zinc-600"
+                    }`}
+                  ></div>
+                ))}
+              </div>
+            ) : null}
             <div className="flex justify-between w-[20%]">
               <Dialog>
                 <DialogTrigger asChild>
