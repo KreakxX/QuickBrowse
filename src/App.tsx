@@ -119,6 +119,7 @@ export default function BrowserLayout() {
   const [ySession, setYSession] = useState<number>(0);
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
+  const [TabGroupOpen, setTabGroupOpen] = useState<boolean>(false);
   interface color {
     name: string;
     hex: string;
@@ -2017,9 +2018,17 @@ export default function BrowserLayout() {
             ) : null}
             <Separator className="mt-2 mb-3 bg-zinc-600"></Separator>
             <div className="flex justify-between w-[20%]">
-              <Dialog>
+              <Dialog
+                open={TabGroupOpen}
+                onOpenChange={() => {
+                  setTabGroupOpen(!TabGroupOpen);
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button
+                    onClick={() => {
+                      setTabGroupOpen(true);
+                    }}
                     style={{ backgroundColor: activeTheme?.secondary }}
                     className="rounded-lg mb-3 ml-2 w-8 h-10 "
                   >
@@ -2042,6 +2051,7 @@ export default function BrowserLayout() {
                   ></Input>
                   <Button
                     onClick={() => {
+                      setTabGroupOpen(false);
                       createNewTabGroup();
                     }}
                     className="bg-zinc-800"
