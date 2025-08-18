@@ -1928,212 +1928,305 @@ export default function BrowserLayout() {
                           (sv) => sv.baseTabId === activeTabId
                         );
                         return tab.id === activeTabId && activeSplitView ? (
-                          <div key={tab.id} className="mb-2 relative group">
-                            <button
-                              style={{
-                                backgroundColor: activeTheme.secondary,
-                                borderColor:
-                                  tab.id === activeTabIdSession && shared
-                                    ? activeTheme.acsent
-                                    : tab.id === activeTabId
-                                    ? "#52525b"
-                                    : undefined,
-                              }}
-                              className={`w-full h-10 ${
-                                tab.id === activeTabIdSession && shared
-                                  ? "border"
-                                  : tab.id === activeTabId
-                                  ? "border"
-                                  : "border-0"
-                              }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
-                              onClick={() => switchToTab(tab.id)}
-                            >
-                              <div className="flex w-full gap-1">
+                          <>
+                            {(() => {
+                              return (
                                 <div
-                                  onMouseEnter={() => setHoveredTab(tab.id)}
-                                  onMouseLeave={() => setHoveredTab(null)}
-                                  style={{ background: activeTheme.secondary2 }}
-                                  className="flex items-center flex-1 rounded px-2 py-1"
+                                  key={tab.id}
+                                  className="mb-2 relative group"
                                 >
-                                  {tab.favIcon && (
-                                    <img
-                                      src={tab.favIcon || "/placeholder.svg"}
-                                      alt="favicon"
-                                      className="w-4 h-4 mr-2"
-                                      onError={(e) =>
-                                        (e.currentTarget.style.display = "none")
-                                      }
-                                    />
-                                  )}
-                                  <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
-                                    {tab.title}
-                                  </p>
-                                  {hoveredTab === tab.id && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (tabGroup.title == "Base") {
-                                          closeTab(tab.id);
-                                        } else {
-                                          removeFromTabGroup(tab.id);
+                                  <button
+                                    style={{
+                                      backgroundColor: activeTheme.secondary,
+                                      borderColor:
+                                        tab.id === activeTabIdSession && shared
+                                          ? activeTheme.acsent
+                                          : tab.id === activeTabId
+                                          ? "#52525b"
+                                          : undefined,
+                                    }}
+                                    className={`w-full h-10 ${
+                                      tab.id === activeTabIdSession && shared
+                                        ? "border"
+                                        : tab.id === activeTabId
+                                        ? "border"
+                                        : "border-0"
+                                    }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
+                                    onClick={() => switchToTab(tab.id)}
+                                  >
+                                    <div className="flex w-full gap-1">
+                                      <div
+                                        onMouseEnter={() =>
+                                          setHoveredTab(tab.id)
                                         }
-                                      }}
-                                      className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
-                                    >
-                                      <X className="h-3 w-3 text-zinc-400" />
-                                    </button>
-                                  )}
-                                </div>
+                                        onMouseLeave={() => setHoveredTab(null)}
+                                        style={{
+                                          background: activeTheme.secondary2,
+                                        }}
+                                        className="flex items-center flex-1 rounded px-2 py-1"
+                                      >
+                                        {tab.favIcon && (
+                                          <img
+                                            src={
+                                              tab.favIcon || "/placeholder.svg"
+                                            }
+                                            alt="favicon"
+                                            className="w-4 h-4 mr-2"
+                                            onError={(e) =>
+                                              (e.currentTarget.style.display =
+                                                "none")
+                                            }
+                                          />
+                                        )}
+                                        <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
+                                          {tab.title}
+                                        </p>
+                                        {hoveredTab === tab.id && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (tabGroup.title == "Base") {
+                                                closeTab(tab.id);
+                                              } else {
+                                                removeFromTabGroup(tab.id);
+                                              }
+                                            }}
+                                            className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                          >
+                                            <X className="h-3 w-3 text-zinc-400" />
+                                          </button>
+                                        )}
+                                      </div>
 
-                                {(() => {
-                                  const baseTab = splitViewTabs.find(
-                                    (tab) => tab.baseTabId == activeTabId
-                                  );
-                                  if (!baseTab) return;
-                                  const splitTab = getAllTabs().find(
-                                    (t) => t.id === baseTab.splitViewTabId
-                                  );
-                                  if (!splitTab) return null;
-                                  return (
-                                    <div
-                                      onMouseEnter={() =>
-                                        setHoveredTab(baseTab.splitViewTabId)
-                                      }
-                                      onMouseLeave={() => setHoveredTab(null)}
-                                      style={{
-                                        background: activeTheme.secondary2,
-                                      }}
-                                      className="flex items-center flex-1  rounded px-2 py-1"
-                                    >
+                                      {(() => {
+                                        const baseTab = splitViewTabs.find(
+                                          (tab) => tab.baseTabId == activeTabId
+                                        );
+                                        if (!baseTab) return;
+                                        const splitTab = getAllTabs().find(
+                                          (t) => t.id === baseTab.splitViewTabId
+                                        );
+                                        if (!splitTab) return null;
+                                        return (
+                                          <div
+                                            onMouseEnter={() =>
+                                              setHoveredTab(
+                                                baseTab.splitViewTabId
+                                              )
+                                            }
+                                            onMouseLeave={() =>
+                                              setHoveredTab(null)
+                                            }
+                                            style={{
+                                              background:
+                                                activeTheme.secondary2,
+                                            }}
+                                            className="flex items-center flex-1  rounded px-2 py-1"
+                                          >
+                                            <img
+                                              src={
+                                                splitTab.favIcon ||
+                                                "/placeholder.svg?height=16&width=16"
+                                              }
+                                              alt="favicon"
+                                              className="w-4 h-4 mr-2"
+                                              onError={(e) =>
+                                                (e.currentTarget.style.display =
+                                                  "none")
+                                              }
+                                            />
+                                            <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
+                                              {splitTab.title}
+                                            </p>
+                                            {hoveredTab ===
+                                              baseTab.splitViewTabId && (
+                                              <div className="flex gap-1">
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (
+                                                      tabGroup.title == "Base"
+                                                    ) {
+                                                      closeTab(tab.id);
+                                                    } else {
+                                                      removeFromTabGroup(
+                                                        tab.id
+                                                      );
+                                                    }
+                                                  }}
+                                                  className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
+                                                >
+                                                  <X className="h-3 w-3 text-zinc-400" />
+                                                </button>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+
+                                                    const existingSplitView =
+                                                      splitViewTabs.find(
+                                                        (splitView) =>
+                                                          splitView.baseTabId ===
+                                                          activeTabId
+                                                      );
+                                                    if (existingSplitView) {
+                                                      setSplitViewTabs((prev) =>
+                                                        prev.filter(
+                                                          (splitView) =>
+                                                            splitView.baseTabId !==
+                                                            tab.id
+                                                        )
+                                                      );
+                                                    } else {
+                                                      setSplitViewTabs(
+                                                        (prev) => [
+                                                          ...prev,
+                                                          {
+                                                            baseTabId:
+                                                              activeTabId,
+                                                            splitViewTabId:
+                                                              tab.id,
+                                                          },
+                                                        ]
+                                                      );
+                                                    }
+                                                  }}
+                                                  className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                                >
+                                                  <Scaling
+                                                    style={{
+                                                      color: splitViewTabs.some(
+                                                        (splitView) =>
+                                                          splitView.baseTabId ===
+                                                          activeTabId
+                                                      )
+                                                        ? activeTheme.acsent
+                                                        : "#a1a1aa",
+                                                    }}
+                                                    className="h-4 w-4"
+                                                  />
+                                                </button>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                          </>
+                        ) : (
+                          <>
+                            {(() => {
+                              const activeSplitTab = splitViewTabs.find(
+                                (tab) => tab.baseTabId == activeTabId
+                              );
+
+                              return activeSplitTab?.splitViewTabId ==
+                                tab.id ? null : (
+                                <div
+                                  key={tab.id}
+                                  className="mb-2 relative group"
+                                >
+                                  <button
+                                    onClick={() => switchToTab(tab.id)}
+                                    style={{
+                                      backgroundColor: activeTheme.secondary,
+                                      borderColor:
+                                        tab.id === activeTabIdSession && shared
+                                          ? activeTheme.acsent
+                                          : tab.id === activeTabId
+                                          ? "#52525b"
+                                          : undefined,
+                                    }}
+                                    className={`w-full h-10 ${
+                                      tab.id === activeTabIdSession && shared
+                                        ? "border"
+                                        : tab.id === activeTabId
+                                        ? "border"
+                                        : "border-0"
+                                    } flex items-center justify-start text-left px-3 rounded-lg`}
+                                  >
+                                    {tab.favIcon && (
                                       <img
-                                        src={
-                                          splitTab.favIcon ||
-                                          "/placeholder.svg?height=16&width=16"
-                                        }
+                                        src={tab.favIcon || "/placeholder.svg"}
                                         alt="favicon"
-                                        className="w-4 h-4 mr-2"
+                                        className="w-5 h-5 mr-2"
                                         onError={(e) =>
                                           (e.currentTarget.style.display =
                                             "none")
                                         }
                                       />
-                                      <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
-                                        {splitTab.title}
-                                      </p>
-                                      {hoveredTab ===
-                                        baseTab.splitViewTabId && (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (tabGroup.title == "Base") {
-                                              closeTab(tab.id);
-                                            } else {
-                                              removeFromTabGroup(tab.id);
-                                            }
-                                          }}
-                                          className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
-                                        >
-                                          <X className="h-3 w-3 text-zinc-400" />
-                                        </button>
-                                      )}
+                                    )}
+                                    <div className="truncate flex-1 text-sm mr-2 text-white">
+                                      {tab.title || tab.url}
                                     </div>
-                                  );
-                                })()}
-                              </div>
-                            </button>
-                          </div>
-                        ) : (
-                          <div key={tab.id} className="mb-2 relative group">
-                            <button
-                              onClick={() => switchToTab(tab.id)}
-                              style={{
-                                backgroundColor: activeTheme.secondary,
-                                borderColor:
-                                  tab.id === activeTabIdSession && shared
-                                    ? activeTheme.acsent
-                                    : tab.id === activeTabId
-                                    ? "#52525b"
-                                    : undefined,
-                              }}
-                              className={`w-full h-10 ${
-                                tab.id === activeTabIdSession && shared
-                                  ? "border"
-                                  : tab.id === activeTabId
-                                  ? "border"
-                                  : "border-0"
-                              }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
-                            >
-                              {tab.favIcon && (
-                                <img
-                                  src={tab.favIcon || "/placeholder.svg"}
-                                  alt="favicon"
-                                  className="w-5 h-5 mr-2"
-                                  onError={(e) =>
-                                    (e.currentTarget.style.display = "none")
-                                  }
-                                />
-                              )}
-                              <div className="truncate flex-1 text-sm mr-2 text-white">
-                                {tab.title || tab.url}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (tabGroup.title == "Base") {
-                                      closeTab(tab.id);
-                                    } else {
-                                      removeFromTabGroup(tab.id);
-                                    }
-                                  }}
-                                  className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                >
-                                  <X className="h-4 w-4 text-zinc-400 " />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (activeTabId !== tab.id) {
-                                      const existingSplitView =
-                                        splitViewTabs.find(
-                                          (splitView) =>
-                                            splitView.splitViewTabId === tab.id
-                                        );
-                                      if (existingSplitView) {
-                                        const filtered = splitViewTabs.filter(
-                                          (splitView) =>
-                                            splitView.splitViewTabId != tab.id
-                                        );
-                                        setSplitViewTabs(filtered);
-                                      } else {
-                                        setSplitViewTabs((prev) => [
-                                          ...prev,
-                                          {
-                                            baseTabId: activeTabId,
-                                            splitViewTabId: tab.id,
-                                          },
-                                        ]);
-                                      }
-                                    }
-                                  }}
-                                  className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                >
-                                  <Scaling
-                                    style={{
-                                      color:
-                                        splitViewTabs.some(
-                                          (splitView) =>
-                                            splitView.splitViewTabId === tab.id
-                                        ) && activeTabId !== tab.id
-                                          ? activeTheme.acsent
-                                          : "#a1a1aa",
-                                    }}
-                                    className={`h-4 w-4 `}
-                                  />
-                                </button>
-                              </div>
-                            </button>
-                          </div>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (tabGroup.title == "Base") {
+                                            closeTab(tab.id);
+                                          } else {
+                                            removeFromTabGroup(tab.id);
+                                          }
+                                        }}
+                                        className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                      >
+                                        <X className="h-4 w-4 text-zinc-400" />
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (activeTabId !== tab.id) {
+                                            const existingSplitView =
+                                              splitViewTabs.find(
+                                                (splitView) =>
+                                                  splitView.splitViewTabId ===
+                                                  tab.id
+                                              );
+                                            if (existingSplitView) {
+                                              setSplitViewTabs((prev) =>
+                                                prev.filter(
+                                                  (splitView) =>
+                                                    splitView.splitViewTabId !==
+                                                    tab.id
+                                                )
+                                              );
+                                            } else {
+                                              setSplitViewTabs((prev) => [
+                                                ...prev,
+                                                {
+                                                  baseTabId: activeTabId,
+                                                  splitViewTabId: tab.id,
+                                                },
+                                              ]);
+                                            }
+                                          }
+                                        }}
+                                        className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                      >
+                                        <Scaling
+                                          style={{
+                                            color:
+                                              splitViewTabs.some(
+                                                (splitView) =>
+                                                  splitView.splitViewTabId ===
+                                                  tab.id
+                                              ) && activeTabId !== tab.id
+                                                ? activeTheme.acsent
+                                                : "#a1a1aa",
+                                          }}
+                                          className="h-4 w-4"
+                                        />
+                                      </button>
+                                    </div>
+                                  </button>
+                                </div>
+                              );
+                            })()}
+                          </>
                         );
                       })}
                     </div>
@@ -2924,14 +3017,6 @@ export default function BrowserLayout() {
                 direction="horizontal"
                 className="w-full h-full"
               >
-                <ResizableHandle
-                  style={{ borderColor: activeTheme.secondary }}
-                  className="border"
-                  onDragging={(isDragging) => {
-                    setIsResizing(isDragging);
-                  }}
-                />
-
                 {(() => {
                   const activeSplitView = splitViewTabs.find(
                     (sv) => sv.baseTabId === activeTabId
@@ -2966,7 +3051,6 @@ export default function BrowserLayout() {
                         </div>
                       </ResizablePanel>
                       <ResizableHandle
-                        withHandle
                         style={{ borderColor: activeTheme.secondary }}
                         className="border"
                         onDragging={(isDragging) => {
