@@ -1422,6 +1422,15 @@ export default function BrowserLayout() {
   };
 
   const closeTab = (id: number) => {
+    if (id == activeTabId) {
+      const nextTab = tabs.find((tab) => tab.id == id - 1);
+      if (nextTab) {
+        setActiveTabId(nextTab.id);
+        setCurrentUrl(nextTab?.url);
+        setUrl(nextTab.url);
+      }
+    }
+
     const remainingTabs = tabs.filter((tab) => tab.id !== id);
     const tabToDelete = tabs.find((tab) => tab.id === id);
     setTabs(remainingTabs);
@@ -2956,7 +2965,14 @@ export default function BrowserLayout() {
                           ))}
                         </div>
                       </ResizablePanel>
-
+                      <ResizableHandle
+                        withHandle
+                        style={{ borderColor: activeTheme.secondary }}
+                        className="border"
+                        onDragging={(isDragging) => {
+                          setIsResizing(isDragging);
+                        }}
+                      />
                       {activeSplitView && (
                         <ResizablePanel className="w-1/2">
                           <div className="relative w-full h-full">
