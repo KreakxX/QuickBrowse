@@ -15,14 +15,11 @@ import {
   Play,
   Scaling,
   Search,
-  BookMarked,
   Bookmark,
   Group,
   ExternalLink,
-  GroupIcon,
   AppWindow,
-  Scale,
-  PlayIcon,
+  Settings,
 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -50,8 +47,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Separator } from "./components/ui/separator";
-import { Badge } from "./components/ui/badge";
+import colors from "./colors";
 declare global {
   interface Window {
     electronAPI?: {
@@ -90,6 +86,44 @@ declare global {
 }
 
 export default function BrowserLayout() {
+  // INTERFACES
+
+  interface ChatMessage {
+    username?: string;
+    message?: string;
+  }
+  interface SplitView {
+    baseTabId: number;
+    splitViewTabId: number;
+  }
+  interface color {
+    name: string;
+    hex: string;
+    secondary: string;
+    secondary2: string;
+    acsent: string;
+  }
+
+  interface savedTab {
+    id: number;
+    url: string;
+    favicon?: string;
+  }
+
+  interface tabGroup {
+    id: number;
+    title: string;
+    tabs: tab[];
+  }
+
+  interface tab {
+    id: number;
+    url: string;
+    title?: string;
+    favIcon?: string;
+  }
+
+  // USESTATES
   const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
   const [currentUrl, setCurrentUrl] = useState<string>(
     "https://quickbrowse.vercel.app"
@@ -107,15 +141,6 @@ export default function BrowserLayout() {
   const [watchTogetherURL, setWatchTogetherURL] = useState<string>("");
   const [watchTogetherCurrentURL, setWatchTogetherCurrentURL] =
     useState<string>("");
-
-  interface ChatMessage {
-    username?: string;
-    message?: string;
-  }
-  interface SplitView {
-    baseTabId: number;
-    splitViewTabId: number;
-  }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
@@ -129,14 +154,6 @@ export default function BrowserLayout() {
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   const [TabGroupOpen, setTabGroupOpen] = useState<boolean>(false);
-  interface color {
-    name: string;
-    hex: string;
-    secondary: string;
-    secondary2: string;
-    acsent: string;
-  }
-  // good #3f3f4666
   const [activeTheme, setActiveTheme] = useState<color>({
     name: "dark",
     hex: "#09090b",
@@ -145,179 +162,6 @@ export default function BrowserLayout() {
     acsent: "#6366f1",
   });
 
-  const colors = [
-    {
-      name: "dark",
-      hex: "#09090b",
-      secondary: "#18181b",
-      secondary2: "#27272a",
-      acsent: "#6366f1",
-    },
-    {
-      name: "default",
-      hex: "#27272a",
-      secondary: "#3f3f4666",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelBlue",
-      hex: "#AEC6CF",
-      secondary: "#90ACB7",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelGreen",
-      hex: "#B2F2BB",
-      secondary: "#91D4A0",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelPink",
-      hex: "#FFD1DC",
-      secondary: "#E6AAB8",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelPurple",
-      hex: "#CBAACB",
-      secondary: "#A98AA9",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelYellow",
-      hex: "#FFF5BA",
-      secondary: "#E6D998",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "mint",
-      hex: "#AAF0D1",
-      secondary: "#8BD3B6",
-      secondary2: "#27272a",
-      acsent: "#6366f1",
-    },
-    {
-      name: "babyBlue",
-      hex: "#BFEFFF",
-      secondary: "#9ACDDC",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "lavender",
-      hex: "#E6E6FA",
-      secondary: "#CFCFE3",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "peach",
-      hex: "#FFDAB9",
-      secondary: "#E6BB93",
-      secondary2: "#27272a",
-      acsent: "#6366f1",
-    },
-    {
-      name: "lightCoral",
-      hex: "#F08080",
-      secondary: "#CC6666",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "seafoam",
-      hex: "#9FE2BF",
-      secondary: "#7FC1A1",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "lightLilac",
-      hex: "#D8B7DD",
-      secondary: "#B995BD",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "blush",
-      hex: "#F9C6C9",
-      secondary: "#DAA5A9",
-      secondary2: "#27272a",
-      acsent: "#6366f1",
-    },
-    {
-      name: "softTeal",
-      hex: "#B2DFDB",
-      secondary: "#8FC0BE",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "paleOrange",
-      hex: "#FFD8B1",
-      secondary: "#E6B48C",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "pastelCyan",
-      hex: "#B2FFFF",
-      secondary: "#90DCDC",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "lightRose",
-      hex: "#FADADD",
-      secondary: "#DCB8BB",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "honeydew",
-      hex: "#F0FFF0",
-      secondary: "#D1E6D1",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "powderBlue",
-      hex: "#B0E0E6",
-      secondary: "#8FC2C7",
-      secondary2: "#27272a",
-
-      acsent: "#6366f1",
-    },
-    {
-      name: "mist",
-      hex: "#D6EAF8",
-      secondary: "#B6C9D6",
-      secondary2: "#27272a",
-      acsent: "#6366f1",
-    },
-  ];
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [bookMarkTabs, setBookMarkTabs] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
@@ -339,25 +183,21 @@ export default function BrowserLayout() {
   const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
     useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  interface savedTab {
-    id: number;
-    url: string;
-    favicon?: string;
-  }
+  const [tabs, setTabs] = useState<tab[]>([
+    {
+      id: 0,
+      url: "https://quickbrowse.vercel.app/",
+      favIcon: "https://quickbrowse.vercel.app/favicon.ico",
+    },
+  ]);
+  const [sessionCreated, setSessionCreated] = useState<boolean>(false);
+  const [sessionCode, setSessionCode] = useState<string>("");
 
-  interface tabGroup {
-    id: number;
-    title: string;
-    tabs: tab[];
-  }
+  const sessionCodeRef = useRef(sessionCode);
 
-  interface tab {
-    id: number;
-    url: string;
-    title?: string;
-    favIcon?: string;
-  }
+  // TAB GROUP
 
+  // method for creating new Tab Groups (Workspaces)
   const createNewTabGroup = () => {
     const newTabGroup = {
       id: tabGroupId,
@@ -368,12 +208,14 @@ export default function BrowserLayout() {
     setTabGroups((prev) => [...prev, newTabGroup]);
   };
 
+  // method for deleting a Tab Group (Workspaces) by an Id
   const deleteTabGroup = (id: number) => {
     const filteredTabs = tabGroups.filter((group) => group.id + 1 == id);
     setTabGroupId(tabGroupId - 1);
     setTabGroups(filteredTabs);
   };
 
+  // method for adding a Tab to a Tab Group (Workspace)
   const addTabToTabGroup = (url: string) => {
     const origin = new URL(url).origin;
     const newTab = {
@@ -396,11 +238,11 @@ export default function BrowserLayout() {
     setActiveTabId(nextId);
     setUrl(url);
     setCurrentUrl(url);
-
     setNextId((prev) => prev + 1);
   };
 
-  const removeFromTabGroup = (id: number) => {
+  // method for removing a Tab from a Tab Group (Workspace)
+  const removeTabFromTabGroup = (id: number) => {
     setTabGroups((prevgroup) =>
       prevgroup.map((group) =>
         group.id == activeTabGroup
@@ -413,12 +255,17 @@ export default function BrowserLayout() {
       )
     );
   };
+
+  // MAPPING
+
+  // method for getting all the Tabs to map and prevent rerenders in the webview section
   const getAllTabs = () => {
     const normalTabs = tabs;
     const groupTabs = tabGroups.flatMap((group) => group.tabs);
     return [...normalTabs, ...groupTabs];
   };
 
+  // method for getting all TabGroups (Workspaces) to map and display
   const getAllTabGroups = () => {
     const baseTabGroup = {
       id: 0,
@@ -429,6 +276,7 @@ export default function BrowserLayout() {
     return [baseTabGroup, ...tabGroups];
   };
 
+  // method for handling scrolling through the workspaces and changing the workspace id
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
@@ -451,42 +299,7 @@ export default function BrowserLayout() {
     }
   };
 
-  function extractYouTubeVideoID(url: string): string | null {
-    try {
-      const parsedUrl = new URL(url);
-
-      // Check for standard YouTube URL with 'v' param
-      if (
-        parsedUrl.hostname.includes("youtube.com") &&
-        parsedUrl.searchParams.has("v")
-      ) {
-        return parsedUrl.searchParams.get("v");
-      }
-
-      // Check for youtu.be short URL, e.g. https://youtu.be/VIDEO_ID
-      if (parsedUrl.hostname === "youtu.be") {
-        return parsedUrl.pathname.slice(1); // remove leading '/'
-      }
-
-      // Optionally: check for embed URLs or other formats
-
-      return null; // no valid video ID found
-    } catch {
-      return null; // invalid URL
-    }
-  }
-
-  // checking sometimes gets called multiple times like registering again and agai => no clean moving back
-  // Browsing history, watch together, leave Session or close Session sqlite DB
-  // if you navigate you should also update the tab path
-  const [tabs, setTabs] = useState<tab[]>([
-    {
-      id: 0,
-      url: "https://quickbrowse.vercel.app/",
-      favIcon: "https://quickbrowse.vercel.app/favicon.ico",
-    },
-  ]);
-
+  // USEMEMO for loading search suggetions (auto search complete)
   const suggestions = useMemo(() => {
     if (!currentUrl.trim()) return [];
     if (!currentUrl.trim() || currentUrl.length < 3) return [];
@@ -498,6 +311,7 @@ export default function BrowserLayout() {
       .map((item) => item.url);
   }, [currentUrl, history]);
 
+  // REFS updating refs to use in the Websocket useEffect
   useEffect(() => {
     activeTabIdRef.current = activeTabId;
   }, [activeTabId]);
@@ -510,7 +324,11 @@ export default function BrowserLayout() {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
 
-  // just connection useEffect
+  useEffect(() => {
+    sessionCodeRef.current = sessionCode;
+  }, [sessionCode]);
+
+  // UseEffect for handling connections with the websocket
   useEffect(() => {
     const connectWebSocket = () => {
       try {
@@ -540,28 +358,7 @@ export default function BrowserLayout() {
     };
   }, []);
 
-  // UI loading with bookmarks like yellow color and the savedTab
-
-  const loadHistory = async () => {
-    if (!window.electronAPI?.historyload) return;
-    const history = (await window.electronAPI.historyload()).slice(0, 50);
-    const fixedHistory = history
-      .map(({ id, url, favicon, timestamp }) => ({
-        id,
-        url,
-        favicon,
-        timestamp: timestamp,
-      }))
-      .slice(0, 50);
-
-    const sortedHistory = fixedHistory
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 50);
-
-    setHistory(sortedHistory);
-  };
-
-  // gucken was man alles easy sharen kann
+  // useEffect for sharing title changes, and url changes
   useEffect(() => {
     const handleWebViewEvents = () => {
       const activeWebView = webviewRefs.current[activeTabId] as any;
@@ -801,17 +598,53 @@ export default function BrowserLayout() {
     return cleanup;
   }, [activeTabId, activeTabGroup, splitViewTabs, shared]);
 
-  const [sessionCreated, setSessionCreated] = useState<boolean>(false);
-  const [sessionJoined, setSessionJoined] = useState<boolean>(false);
-  const [sessionCode, setSessionCode] = useState<string>("");
+  // Method for sharing Mouse movement
+  const getMouseMovement = () => {
+    let lastSent = 0;
+    const THROTTLE_MS = 35;
 
-  const sessionCodeRef = useRef(sessionCode);
+    document.addEventListener("mousemove", (e) => {
+      const now = Date.now();
 
-  useEffect(() => {
-    sessionCodeRef.current = sessionCode;
-  }, [sessionCode]);
+      if (now - lastSent < THROTTLE_MS) {
+        return;
+      }
+      lastSent = now;
 
-  // method for chaning bools and if chat_message than update the Chatmessages
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        return;
+      }
+
+      const webviewContainer = document.querySelector(
+        ".flex-1.bg-zinc-900.relative"
+      );
+      if (webviewContainer) {
+        const rect = webviewContainer.getBoundingClientRect();
+
+        const relativeX = e.clientX - rect.left;
+        const relativeY = e.clientY - rect.top;
+
+        if (
+          relativeX >= 0 &&
+          relativeY >= 0 &&
+          relativeX <= rect.width &&
+          relativeY <= rect.height
+        ) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: "mouse_move",
+              data: {
+                x: relativeX,
+                y: relativeY,
+              },
+            })
+          );
+        }
+      }
+    });
+  };
+
+  // method for handling messages and updating the client via websockets
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case "session_created":
@@ -835,8 +668,6 @@ export default function BrowserLayout() {
               : tab
           )
         );
-        // problem is activeTabId and SessionId wont update correctly when adding a new Tab and switching to it
-        // it needs to be checking the locally thing
         if (data.tab.id === activeTabIdRef.current) {
           setCurrentUrl(data.tab.url);
           setUrl(data.tab.url);
@@ -902,12 +733,10 @@ export default function BrowserLayout() {
         break;
       case "delete_session":
         setShared(false);
-        setSessionJoined(false);
         setSessionCode("");
         break;
       case "session_joined":
         setSessionCode(data.code);
-        setSessionJoined(true);
         setShared(true);
         setTabs(data.tabs);
 
@@ -969,6 +798,9 @@ export default function BrowserLayout() {
     }
   };
 
+  // SESSION
+
+  // method for closing a Session
   const closeSession = () => {
     if (sessionCreated && shared) {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -989,6 +821,7 @@ export default function BrowserLayout() {
     }
   };
 
+  // method for creating a Session
   const createSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -1006,7 +839,23 @@ export default function BrowserLayout() {
     );
   };
 
-  // Watch Together Logic
+  // method for joining a Session
+  const joinSession = () => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+    wsRef.current.send(
+      JSON.stringify({
+        type: "join_session",
+        code: sessionCode,
+        username: username,
+        activeTabId: activeTabId,
+      })
+    );
+  };
+
+  // method for playing a video in a watch together envrioment
   const playvideo = () => {
     const iframe = document.getElementById(
       "youtube-iframe"
@@ -1017,6 +866,7 @@ export default function BrowserLayout() {
     );
   };
 
+  // method for pausing a video in a watch togehter envrioment
   const pausevideo = () => {
     const iframe = document.getElementById(
       "youtube-iframe"
@@ -1027,6 +877,7 @@ export default function BrowserLayout() {
     );
   };
 
+  // UseEffect for detecting skippings and updating the skipped bool
   useEffect(() => {
     if (currentTime - 5 > oldCurrentTime) {
       setSkipped(true);
@@ -1042,6 +893,7 @@ export default function BrowserLayout() {
     setOldCurrentTime(currentTime);
   }, [currentTime]);
 
+  // UseEffect for getting the currentTime when creating a Session
   useEffect(() => {
     if (shared) {
       const interval = setInterval(() => {
@@ -1063,6 +915,7 @@ export default function BrowserLayout() {
     }
   }, [shared]);
 
+  // UseEffect for sending a skipped for or back wards event to sync all the clients
   useEffect(() => {
     if (!skipped) return;
 
@@ -1084,6 +937,7 @@ export default function BrowserLayout() {
     }
   }, [skipped]);
 
+  // method for skipping forward in the client when getting message from websockets
   const skipForward = (time: number) => {
     const difference = time - currentTime;
     const iframe = document.getElementById(
@@ -1099,6 +953,7 @@ export default function BrowserLayout() {
     );
   };
 
+  // method for skipping backwars in the client when getting message from websockets
   const skipBackward = (time: number) => {
     const difference = currentTime - time;
     const iframe = document.getElementById(
@@ -1114,7 +969,7 @@ export default function BrowserLayout() {
     );
   };
 
-  // capturing play and pause
+  // UseEffect for detecting play and pause actions to sync clients
   useEffect(() => {
     const handleMessage = (event: any) => {
       try {
@@ -1156,6 +1011,7 @@ export default function BrowserLayout() {
     return () => window.removeEventListener("message", handleMessage);
   }, [watchTogether, shared]);
 
+  // method for enabling watch together and creating a watch together session
   const EnableWatchTogether = () => {
     setWatchTogether(true);
     const videoID = extractYouTubeVideoID(watchTogetherCurrentURL);
@@ -1179,6 +1035,7 @@ export default function BrowserLayout() {
     );
   };
 
+  // method for joining a watch together and getting the currenTime from host (asking host for currenttime and then updating client)
   const handleJoingWatchTogetherSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -1191,6 +1048,29 @@ export default function BrowserLayout() {
     );
   };
 
+  // method for extracting Youtube video Id for loading embeddings in Iframe, to work around CORS policy
+  function extractYouTubeVideoID(url: string): string | null {
+    try {
+      const parsedUrl = new URL(url);
+
+      if (
+        parsedUrl.hostname.includes("youtube.com") &&
+        parsedUrl.searchParams.has("v")
+      ) {
+        return parsedUrl.searchParams.get("v");
+      }
+
+      if (parsedUrl.hostname === "youtu.be") {
+        return parsedUrl.pathname.slice(1);
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // setting up Eventlisteners to capture play and pause and skipping
   const setupEventListeners = () => {
     const iframe = document.getElementById(
       "youtube-iframe"
@@ -1221,6 +1101,7 @@ export default function BrowserLayout() {
     }, 1000);
   };
 
+  // method for initalizing youtube API when creating Iframe
   const handleIframeLoad = () => {
     setTimeout(() => {
       const iframe = document.getElementById(
@@ -1239,23 +1120,7 @@ export default function BrowserLayout() {
     }, 1000);
   };
 
-  // sending the specific type to the server and it handles it via the MessageHandler and updates makes the client joins the session
-  const joinSession = () => {
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
-      return;
-    }
-    wsRef.current.send(
-      JSON.stringify({
-        type: "join_session",
-        code: sessionCode,
-        username: username,
-        activeTabId: activeTabId,
-      })
-    );
-  };
-
-  // send Message to host and other clients
+  // method for sending a Chat Message to all other clients
   const sendChatMessage = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
@@ -1275,6 +1140,7 @@ export default function BrowserLayout() {
     setMessageInput("");
   };
 
+  // method for searching the web when hitting enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       setUrl(currentUrl);
@@ -1295,6 +1161,25 @@ export default function BrowserLayout() {
     }
   };
 
+  // method for navigating back
+  const navigateBack = () => {
+    const activeWebview = webviewRefs.current[activeTabId] as any;
+    activeWebview?.goBack();
+  };
+
+  // method for navigating forward
+  const navigateForward = () => {
+    const activeWebview = webviewRefs.current[activeTabId] as any;
+    activeWebview?.goForward();
+  };
+
+  // method for refreshing webpage
+  const refresh = () => {
+    const activeWebview = webviewRefs.current[activeTabId] as any;
+    activeWebview?.reload();
+  };
+
+  // method for switching to tab
   const switchToTab = (tabId: number) => {
     const activeSplitView = splitViewTabs.find(
       (sv) => sv.baseTabId === activeTabId
@@ -1320,22 +1205,8 @@ export default function BrowserLayout() {
       );
     }
   };
-  const navigateBack = () => {
-    const activeWebview = webviewRefs.current[activeTabId] as any;
-    activeWebview?.goBack();
-  };
 
-  const navigateForward = () => {
-    const activeWebview = webviewRefs.current[activeTabId] as any;
-    activeWebview?.goForward();
-  };
-
-  // also via websockets so everything happends
-  const refresh = () => {
-    const activeWebview = webviewRefs.current[activeTabId] as any;
-    activeWebview?.reload();
-  };
-
+  // method for adding a new Tab (default workspace)
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
     const newTab = {
@@ -1355,8 +1226,7 @@ export default function BrowserLayout() {
       alert("Not connected to server");
       return;
     }
-    // if (!messageInput.trim()) return;   // this caused the error
-    // send the Message to the host, the websocket which gets also displayed than for all other clients
+
     {
       shared
         ? wsRef.current.send(
@@ -1370,76 +1240,8 @@ export default function BrowserLayout() {
         : null;
     }
   };
-  const saveNewBookmark = (id: number) => {
-    const tab = tabs.find((tab) => tab.id == id);
-    if (!tab) return;
-    window.electronAPI?.addNewBookmark(
-      tab.url,
-      new URL(tab.url).origin + "/favicon.ico"
-    );
-  };
 
-  const saveNewLongTermTab = (id: number) => {
-    if (savedTabs.length >= 9) return;
-    const tab = tabs.find((tab) => tab.id == id);
-    if (!tab) return;
-    window.electronAPI?.addNewSavedtab(
-      tab.url,
-      new URL(tab.url).origin + "/favicon.ico",
-      savedTabId
-    );
-    const savedTab = {
-      id: savedTabId,
-      url: tab.url,
-      favicon: tab.favIcon,
-    };
-    const newSavedTabId = savedTabId + 1;
-    setSavedTabs((prev) => [...prev, savedTab]);
-    setSavedTabId(newSavedTabId);
-  };
-
-  const deleteLongTermTab = (id: number) => {
-    const filteredTabs = savedTabs.filter((tab) => tab.id !== id);
-    setSavedTabs(filteredTabs);
-    window.electronAPI?.deleteSavedTab(id);
-  };
-
-  useEffect(() => {
-    const findSavedTabs = async () => {
-      const Savedtabs = await window.electronAPI?.loadSavedTab();
-      console.log(Savedtabs);
-      if (!Savedtabs || Savedtabs.length === 0) return;
-      const fixedSavedTabs = Savedtabs.map(
-        ({ id, url, favicon, timestamp }) => ({
-          id,
-          url,
-          favicon,
-          timestamp: timestamp,
-        })
-      );
-      console.log(fixedSavedTabs);
-      setSavedTabs(fixedSavedTabs);
-
-      const lastElement = Savedtabs[Savedtabs?.length - 1];
-      setSavedTabId(lastElement.id + 1);
-    };
-    findSavedTabs();
-  }, []);
-
-  const loadBookMarks = async () => {
-    const bookmarks = await window.electronAPI?.loadAllBookmarks();
-    if (!bookmarks) return;
-
-    const fixedBookmarks = bookmarks.map(({ id, url, favicon, timestamp }) => ({
-      id,
-      url,
-      favicon,
-      timestamp: timestamp,
-    }));
-
-    setBookMarkTabs(fixedBookmarks);
-  };
-
+  // method for closing a tab from (default workspace)
   const closeTab = (id: number) => {
     if (id == activeTabId) {
       const nextTab = tabs.find((tab) => tab.id == id - 1);
@@ -1470,51 +1272,102 @@ export default function BrowserLayout() {
     }
   };
 
-  const getMouseMovement = () => {
-    let lastSent = 0;
-    const THROTTLE_MS = 35;
+  // method for loading Search History
+  const loadHistory = async () => {
+    if (!window.electronAPI?.historyload) return;
+    const history = (await window.electronAPI.historyload()).slice(0, 50);
+    const fixedHistory = history
+      .map(({ id, url, favicon, timestamp }) => ({
+        id,
+        url,
+        favicon,
+        timestamp: timestamp,
+      }))
+      .slice(0, 50);
 
-    document.addEventListener("mousemove", (e) => {
-      const now = Date.now();
+    const sortedHistory = fixedHistory
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 50);
 
-      if (now - lastSent < THROTTLE_MS) {
-        return;
-      }
-      lastSent = now;
-
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        return;
-      }
-
-      const webviewContainer = document.querySelector(
-        ".flex-1.bg-zinc-900.relative"
-      );
-      if (webviewContainer) {
-        const rect = webviewContainer.getBoundingClientRect();
-
-        const relativeX = e.clientX - rect.left;
-        const relativeY = e.clientY - rect.top;
-
-        if (
-          relativeX >= 0 &&
-          relativeY >= 0 &&
-          relativeX <= rect.width &&
-          relativeY <= rect.height
-        ) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "mouse_move",
-              data: {
-                x: relativeX,
-                y: relativeY,
-              },
-            })
-          );
-        }
-      }
-    });
+    setHistory(sortedHistory);
   };
 
+  // method for saving a new Bookmark
+  const saveNewBookmark = (id: number) => {
+    const tab = tabs.find((tab) => tab.id == id);
+    if (!tab) return;
+    window.electronAPI?.addNewBookmark(
+      tab.url,
+      new URL(tab.url).origin + "/favicon.ico"
+    );
+  };
+
+  // method for saving a new pinned Tab
+  const saveNewLongTermTab = (id: number) => {
+    if (savedTabs.length >= 9) return;
+    const tab = tabs.find((tab) => tab.id == id);
+    if (!tab) return;
+    window.electronAPI?.addNewSavedtab(
+      tab.url,
+      new URL(tab.url).origin + "/favicon.ico",
+      savedTabId
+    );
+    const savedTab = {
+      id: savedTabId,
+      url: tab.url,
+      favicon: tab.favIcon,
+    };
+    const newSavedTabId = savedTabId + 1;
+    setSavedTabs((prev) => [...prev, savedTab]);
+    setSavedTabId(newSavedTabId);
+  };
+
+  // method for deleting a pinned Tab
+  const deleteLongTermTab = (id: number) => {
+    const filteredTabs = savedTabs.filter((tab) => tab.id !== id);
+    setSavedTabs(filteredTabs);
+    window.electronAPI?.deleteSavedTab(id);
+  };
+
+  // useEffect for loading saved pinned Tabs
+  useEffect(() => {
+    const findSavedTabs = async () => {
+      const Savedtabs = await window.electronAPI?.loadSavedTab();
+      console.log(Savedtabs);
+      if (!Savedtabs || Savedtabs.length === 0) return;
+      const fixedSavedTabs = Savedtabs.map(
+        ({ id, url, favicon, timestamp }) => ({
+          id,
+          url,
+          favicon,
+          timestamp: timestamp,
+        })
+      );
+      console.log(fixedSavedTabs);
+      setSavedTabs(fixedSavedTabs);
+
+      const lastElement = Savedtabs[Savedtabs?.length - 1];
+      setSavedTabId(lastElement.id + 1);
+    };
+    findSavedTabs();
+  }, []);
+
+  // method for loading Bookmarks
+  const loadBookMarks = async () => {
+    const bookmarks = await window.electronAPI?.loadAllBookmarks();
+    if (!bookmarks) return;
+
+    const fixedBookmarks = bookmarks.map(({ id, url, favicon, timestamp }) => ({
+      id,
+      url,
+      favicon,
+      timestamp: timestamp,
+    }));
+
+    setBookMarkTabs(fixedBookmarks);
+  };
+
+  // method for getting grid columns for displaying the pinned Tabs responsive
   const getGridColumns = () => {
     const tabCount = savedTabs.length;
     if (tabCount === 0) return "1fr";
@@ -1659,22 +1512,32 @@ export default function BrowserLayout() {
                   ) : null}
                 </div>
 
-                <div className="flex gap-2 mt-2">
+                <div className="grid grid-cols-3 gap-2 mt-2">
                   <Button
                     style={{
                       backgroundColor: !shareCursor
                         ? activeTheme?.secondary
                         : activeTheme.acsent,
                     }}
-                    className={` w-1/2 rounded-lg  mt-2 `}
+                    className={` rounded-lg  mt-2 `}
                     onClick={() => {
                       setShareCursor(!shareCursor);
                     }}
                   >
                     <MousePointer2></MousePointer2>
                   </Button>
+                  <Button
+                    style={{
+                      backgroundColor: !shareCursor
+                        ? activeTheme?.secondary
+                        : activeTheme.acsent,
+                    }}
+                    className={`  rounded-lg  mt-2 `}
+                  >
+                    <Settings></Settings>
+                  </Button>
                   <Dialog>
-                    <form className="w-1/2">
+                    <form className="w-full">
                       <DialogTrigger asChild>
                         <Button
                           style={{
@@ -1682,7 +1545,7 @@ export default function BrowserLayout() {
                               ? activeTheme?.secondary
                               : activeTheme.acsent,
                           }}
-                          className={` w-full rounded-lg  mt-2`}
+                          className={` w-full  rounded-lg  mt-2`}
                         >
                           <Link></Link>
                         </Button>
@@ -1839,41 +1702,6 @@ export default function BrowserLayout() {
                   </Dialog>{" "}
                 </div>
               </div>
-              {/* <>
-                {(() => {
-                  const youtubePlaying = tabs.some(
-                    (tab) =>
-                      tab.url.includes("youtube") &&
-                      !tab.url.includes("google.com")
-                  );
-                  const youtubeTab = tabs.find(
-                    (tab) =>
-                      tab.url.includes("youtube") &&
-                      !tab.url.includes("google.com")
-                  );
-                  if (!youtubeTab) return;
-                  return youtubePlaying ? (
-                    <div
-                      style={{ backgroundColor: activeTheme.secondary }}
-                      className="px-3 w-full flex mt-4 rounded-lg py-2 gap-3  "
-                    >
-                      <img
-                        src="https://youtube.com/favicon.ico"
-                        className="h-4 w-4 mt-0.5"
-                        alt=""
-                      />
-                      <h1 className="text-sm truncate w-[60%]">
-                        {youtubeTab.title}
-                      </h1>
-
-                      <PlayIcon
-                        onClick={() => {}}
-                        className="h-4 w-4 mt-0.5"
-                      ></PlayIcon>
-                    </div>
-                  ) : null;
-                })()}
-              </> */}
             </div>
 
             <div className="px-3 mb-4 w-full">
@@ -2043,7 +1871,7 @@ export default function BrowserLayout() {
                                               if (tabGroup.title == "Base") {
                                                 closeTab(tab.id);
                                               } else {
-                                                removeFromTabGroup(tab.id);
+                                                removeTabFromTabGroup(tab.id);
                                               }
                                             }}
                                             className="h-5 w-5 hover:bg-zinc-600 bg-transparent rounded-sm ml-1 flex items-center justify-center"
@@ -2106,7 +1934,7 @@ export default function BrowserLayout() {
                                                     ) {
                                                       closeTab(tab.id);
                                                     } else {
-                                                      removeFromTabGroup(
+                                                      removeTabFromTabGroup(
                                                         tab.id
                                                       );
                                                     }
@@ -2225,7 +2053,7 @@ export default function BrowserLayout() {
                                           if (tabGroup.title == "Base") {
                                             closeTab(tab.id);
                                           } else {
-                                            removeFromTabGroup(tab.id);
+                                            removeTabFromTabGroup(tab.id);
                                           }
                                         }}
                                         className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
