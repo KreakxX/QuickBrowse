@@ -19,6 +19,10 @@ function createWindow() {
     height: 800,
     icon: transparentIcon,
     title: "",
+    titleBarOverlay: {
+  color: "#09090b",   // Hintergrund
+  symbolColor: "#52525b" // Buttons
+},
     // frame: false, // Remove the default frame to create custom titlebar
     // titleBarStyle: 'hidden',
     webPreferences: {

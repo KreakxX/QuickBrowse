@@ -23,6 +23,7 @@ import {
   AppWindow,
   Scale,
 } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -110,10 +111,14 @@ export default function BrowserLayout() {
     username?: string;
     message?: string;
   }
+  interface SplitView {
+    baseTabId: number;
+    splitViewTabId: number;
+  }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputFocused, setInputFocused] = useState<boolean>(false);
   const [messageInput, setMessageInput] = useState<string>("");
-  const [splitViewId, setSplitViewId] = useState<number | null>(null);
+  const [splitViewTabs, setSplitViewTabs] = useState<SplitView[]>([]);
   const [addNewTabSearchBar, setAddNewTabSearchBar] = useState<boolean>(false);
   const [history, setHistory] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
@@ -563,7 +568,17 @@ export default function BrowserLayout() {
 
       const handleNavigate = (event: any, id: number) => {
         console.log("Navigation detected:", event.url);
-        const newUrl = event.url;
+        let newUrl = event.url;
+
+        try {
+          const url = new URL(newUrl);
+          url.searchParams.delete("zx");
+          url.searchParams.delete("no_sw_cr");
+          url.searchParams.delete("_");
+          newUrl = url.toString();
+        } catch (e) {
+          newUrl = event.url;
+        }
 
         if (id === activeTabId) {
           setCurrentUrl(newUrl);
@@ -636,10 +651,15 @@ export default function BrowserLayout() {
       };
       const handleNavigateActive = (e: any) => handleNavigate(e, activeTabId);
       let splitNavigateHandler: ((e: any) => void) | null = null;
-      if (splitViewId) {
-        const splitViewWebView = webviewRefs.current[splitViewId];
+      const splitViewActive = splitViewTabs.find(
+        (tab) => tab.baseTabId == activeTabId
+      );
+      if (splitViewActive) {
+        const splitViewWebView =
+          webviewRefs.current[splitViewActive.splitViewTabId];
         if (splitViewWebView) {
-          splitNavigateHandler = (e: any) => handleNavigate(e, splitViewId);
+          splitNavigateHandler = (e: any) =>
+            handleNavigate(e, splitViewActive.splitViewTabId);
           splitViewWebView.addEventListener(
             "did-navigate",
             splitNavigateHandler
@@ -729,8 +749,12 @@ export default function BrowserLayout() {
       activeWebView.addEventListener("console-message", handleConsoleMessage);
 
       return () => {
-        if (splitViewId && splitNavigateHandler) {
-          const splitViewWebView = webviewRefs.current[splitViewId];
+        const splitViewActive = splitViewTabs.find(
+          (tab) => tab.baseTabId == activeTabId
+        );
+        if (splitViewActive?.splitViewTabId && splitNavigateHandler) {
+          const splitViewWebView =
+            webviewRefs.current[splitViewActive.splitViewTabId];
           if (splitViewWebView) {
             splitViewWebView.removeEventListener(
               "did-navigate",
@@ -755,10 +779,8 @@ export default function BrowserLayout() {
     };
 
     const cleanup = handleWebViewEvents();
-    return () => {
-      if (cleanup) cleanup();
-    };
-  }, [activeTabId, activeTabGroup, splitViewId, shared]);
+    return cleanup;
+  }, [activeTabId, activeTabGroup, splitViewTabs, shared]);
 
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   const [sessionJoined, setSessionJoined] = useState<boolean>(false);
@@ -1255,6 +1277,10 @@ export default function BrowserLayout() {
   };
 
   const switchToTab = (tabId: number) => {
+    const activeSplitView = splitViewTabs.find(
+      (sv) => sv.baseTabId === activeTabId
+    );
+    if (activeSplitView && tabId == activeSplitView.splitViewTabId) return;
     setActiveTabId(tabId);
     const allTabs = getAllTabs();
     const tab = allTabs.find((t) => t.id === tabId);
@@ -1402,10 +1428,6 @@ export default function BrowserLayout() {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       alert("Not connected to server");
       return;
-    }
-
-    if (id == activeTabId || id == splitViewId) {
-      setSplitViewId(null);
     }
 
     if (shared) {
@@ -1874,7 +1896,7 @@ export default function BrowserLayout() {
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
-                    <div className="mb-3 ">
+                    <div className="  mb-3 ">
                       <Button
                         onClick={() => {
                           if (tabGroup.title == "Base") {
@@ -1892,8 +1914,11 @@ export default function BrowserLayout() {
                       </Button>
                     </div>
                     <div className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2">
-                      {tabGroup.tabs.map((tab) =>
-                        tab.id === activeTabId && splitViewId !== null ? (
+                      {tabGroup.tabs.map((tab) => {
+                        const activeSplitView = splitViewTabs.find(
+                          (sv) => sv.baseTabId === activeTabId
+                        );
+                        return tab.id === activeTabId && activeSplitView ? (
                           <div key={tab.id} className="mb-2 relative group">
                             <button
                               style={{
@@ -1952,14 +1977,18 @@ export default function BrowserLayout() {
                                 </div>
 
                                 {(() => {
+                                  const baseTab = splitViewTabs.find(
+                                    (tab) => tab.baseTabId == activeTabId
+                                  );
+                                  if (!baseTab) return;
                                   const splitTab = getAllTabs().find(
-                                    (t) => t.id === splitViewId
+                                    (t) => t.id === baseTab.splitViewTabId
                                   );
                                   if (!splitTab) return null;
                                   return (
                                     <div
                                       onMouseEnter={() =>
-                                        setHoveredTab(splitViewId)
+                                        setHoveredTab(baseTab.splitViewTabId)
                                       }
                                       onMouseLeave={() => setHoveredTab(null)}
                                       style={{
@@ -1982,7 +2011,8 @@ export default function BrowserLayout() {
                                       <p className="text-sm text-white overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
                                         {splitTab.title}
                                       </p>
-                                      {hoveredTab === splitViewId && (
+                                      {hoveredTab ===
+                                        baseTab.splitViewTabId && (
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -2055,13 +2085,25 @@ export default function BrowserLayout() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (activeTabId !== tab.id) {
-                                      if (
-                                        splitViewId !== null &&
-                                        splitViewId === tab.id
-                                      ) {
-                                        setSplitViewId(null);
+                                      const existingSplitView =
+                                        splitViewTabs.find(
+                                          (splitView) =>
+                                            splitView.splitViewTabId === tab.id
+                                        );
+                                      if (existingSplitView) {
+                                        const filtered = splitViewTabs.filter(
+                                          (splitView) =>
+                                            splitView.splitViewTabId != tab.id
+                                        );
+                                        setSplitViewTabs(filtered);
                                       } else {
-                                        setSplitViewId(tab.id);
+                                        setSplitViewTabs((prev) => [
+                                          ...prev,
+                                          {
+                                            baseTabId: activeTabId,
+                                            splitViewTabId: tab.id,
+                                          },
+                                        ]);
                                       }
                                     }
                                   }}
@@ -2070,8 +2112,10 @@ export default function BrowserLayout() {
                                   <Scaling
                                     style={{
                                       color:
-                                        splitViewId === tab.id &&
-                                        activeTabId !== tab.id
+                                        splitViewTabs.some(
+                                          (splitView) =>
+                                            splitView.splitViewTabId === tab.id
+                                        ) && activeTabId !== tab.id
                                           ? activeTheme.acsent
                                           : "#a1a1aa",
                                     }}
@@ -2081,185 +2125,12 @@ export default function BrowserLayout() {
                               </div>
                             </button>
                           </div>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* <div className="mb-3 mt-5 ">
-                <Button
-                  onClick={() => {
-                    setAddNewTabSearchBar(true);
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New tab
-                </Button>
-              </div> */}
-              {/* <div className="overflow-y-auto max-h-[65vh] scrollbar-hide">
-                {tabs.map((tab) =>
-                  tab.id == activeTabId && splitViewId !== null ? (
-                    <div key={tab.id} className="mb-2 relative group">
-                      <button
-                        onClick={() => switchToTab(tab.id)}
-                        className={`w-full h-10 flex items-center justify-center text-left px-3 rounded ${
-                          activeTabIdSession === tab.id && shared
-                            ? " border border-green-500"
-                            : activeTabId === tab.id
-                            ? " border border-blue-500"
-                            : " border-none hover:bg-zinc-600"
-                        } rounded-lg`}
-                        style={{ backgroundColor: activeTheme?.secondary }}
-                      >
-                        <div className="flex w-full gap-1 ">
-                          <div
-                            onMouseEnter={() => {
-                              setHoveredTab(tab.id);
-                            }}
-                            onMouseLeave={() => {
-                              setHoveredTab(null);
-                            }}
-                            key={tab.id}
-                            className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md"
-                          >
-                            {tab.favIcon && (
-                              <img
-                                src={tab.favIcon || "/placeholder.svg"}
-                                alt="favicon"
-                                className="w-4 h-4 mr-2"
-                                onError={(e) =>
-                                  (e.currentTarget.style.display = "none")
-                                }
-                              />
-                            )}
-                            <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
-                              {tab.title}
-                            </p>
-                            {hoveredTab == tab.id ? (
-                              <Button
-                                onClick={() => {
-                                  closeTab(tab.id);
-                                }}
-                                className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
-                              >
-                                <X className="h-4 w-4"></X>
-                              </Button>
-                            ) : null}
-                          </div>
-
-                          {(() => {
-                            const splitTab = getAllTabs().find(
-                              (t) => t.id === splitViewId
-                            );
-                            if (splitTab == null) return null;
-                            return (
-                              <div
-                                onMouseEnter={() => {
-                                  setHoveredTab(splitViewId);
-                                }}
-                                onMouseLeave={() => {
-                                  setHoveredTab(null);
-                                }}
-                                className="flex items-center flex-1 bg-zinc-600 rounded px-2 py-1 rounded-md"
-                              >
-                                <img
-                                  src={splitTab.favIcon || "/placeholder.svg"}
-                                  alt="favicon"
-                                  className="w-4 h-4 mr-2"
-                                  onError={(e) =>
-                                    (e.currentTarget.style.display = "none")
-                                  }
-                                />
-                                <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap max-w-[5ch]">
-                                  {splitTab.title}
-                                </p>
-                                {hoveredTab == splitViewId ? (
-                                  <Button
-                                    onClick={() => {
-                                      closeTab(splitViewId);
-                                    }}
-                                    className=" h-5 w-5 hover:bg-zinc-500 bg-transparent rounded-sm ml-1"
-                                  >
-                                    <X className="h-4 w-4"></X>
-                                  </Button>
-                                ) : null}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </button>
-                    </div>
-                  ) : (
-                    <div key={tab.id} className="mb-2 relative group">
-                      <button
-                        onClick={() => switchToTab(tab.id)}
-                        className={`w-full h-10 flex items-center justify-start text-left px-3 rounded ${
-                          tab.id === activeTabIdSession && shared
-                            ? " border border-green-500"
-                            : tab.id === activeTabId
-                            ? " border border-blue-500"
-                            : " border-none hover:bg-zinc-600"
-                        } rounded-lg`}
-                        style={{ backgroundColor: activeTheme?.secondary }}
-                      >
-                        {tab.favIcon && (
-                          <img
-                            src={tab.favIcon || "/placeholder.svg"}
-                            alt="favicon"
-                            className="w-5 h-5 mr-2"
-                            onError={(e) =>
-                              (e.currentTarget.style.display = "none")
-                            }
-                          />
-                        )}
-                        <div className="truncate flex-1 text-sm mr-2">
-                          {tab.title || tab.url}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            onClick={() => {
-                              closeTab(tab.id);
-                            }}
-                            className=" h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
-                          >
-                            <X></X>
-                          </Button>
-                          <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-
-                              if (activeTabId !== tab.id) {
-                                if (
-                                  splitViewId !== null &&
-                                  splitViewId === tab.id
-                                ) {
-                                  setSplitViewId(null);
-                                } else {
-                                  setSplitViewId(tab.id);
-                                }
-                              }
-                            }}
-                            className="h-3 w-3 bg-transparent relative hover:text-gray-400 hover:bg-transparent"
-                          >
-                            <Scaling
-                              className={`${
-                                splitViewId === tab.id && activeTabId !== tab.id
-                                  ? "text-green-500"
-                                  : "text-white"
-                              }`}
-                            ></Scaling>
-                          </Button>
-                        </div>
-                      </button>
-                    </div>
-                  )
-                )}
-              </div> */}
             </div>
             {getAllTabGroups().length >= 2 ? (
               <div className="flex justify-center gap-2 mb-2 ">
@@ -3023,8 +2894,8 @@ export default function BrowserLayout() {
           <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
             {activeTabId === activeTabIdSession && shared ? (
               <MousePointer2
-                color="limegreen"
-                fill="limegreen"
+                color="#6366f1"
+                fill="#6366f1"
                 style={{
                   position: "absolute",
                   top: ySession,
@@ -3044,27 +2915,6 @@ export default function BrowserLayout() {
                 direction="horizontal"
                 className="w-full h-full"
               >
-                <ResizablePanel>
-                  {getAllTabs().map((tab) => (
-                    <webview
-                      key={tab.id}
-                      ref={(el) => {
-                        webviewRefs.current[tab.id] = el;
-                      }}
-                      src={tab.id === activeTabId ? url : tab.url}
-                      className={`z-10 w-full h-full ${
-                        tab.id === activeTabId ? "flex" : "hidden"
-                      }`}
-                      partition="persist:QuickBrowse"
-                      allowpopups={false}
-                      style={{
-                        pointerEvents:
-                          shareCursor || isResizing ? "none" : "auto",
-                      }}
-                      webpreferences="contextIsolation,sandbox"
-                    />
-                  ))}
-                </ResizablePanel>
                 <ResizableHandle
                   style={{ borderColor: activeTheme.secondary }}
                   className="border"
@@ -3072,35 +2922,71 @@ export default function BrowserLayout() {
                     setIsResizing(isDragging);
                   }}
                 />
-                {splitViewId != null &&
-                  (() => {
-                    const tab = getAllTabs().find(
-                      (tab) => tab.id === splitViewId
-                    );
-                    console.log(tab);
-                    if (!tab) {
-                      return;
-                    }
-                    return (
-                      <ResizablePanel>
-                        <webview
-                          ref={(el) => {
-                            webviewRefs.current[tab.id] = el;
-                          }}
-                          src={tab.url}
-                          className={`z-10 w-full h-full`}
-                          partition="persist:QuickBrowse"
-                          allowpopups={false}
-                          style={{
-                            pointerEvents:
-                              shareCursor || isResizing ? "none" : "auto",
-                          }}
-                          webpreferences="contextIsolation,sandbox,backgroundThrottling=false,v8CacheOptions=code,enableRemoteModule=false"
-                          useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                        />
+
+                {(() => {
+                  const activeSplitView = splitViewTabs.find(
+                    (sv) => sv.baseTabId === activeTabId
+                  );
+                  const allTabs = getAllTabs();
+
+                  return (
+                    <>
+                      <ResizablePanel
+                        className={!activeSplitView ? "w-full" : "w-1/2"}
+                      >
+                        <div className="relative w-full h-full">
+                          {allTabs.map((tab) => (
+                            <webview
+                              key={`primary-${tab.id}`}
+                              ref={(el) => {
+                                webviewRefs.current[tab.id] = el;
+                              }}
+                              src={tab.id === activeTabId ? url : tab.url}
+                              className={`absolute inset-0 w-full h-full ${
+                                tab.id === activeTabId ? "flex" : "hidden"
+                              }`}
+                              partition="persist:QuickBrowse"
+                              allowpopups={false}
+                              style={{
+                                pointerEvents:
+                                  shareCursor || isResizing ? "none" : "auto",
+                              }}
+                              webpreferences="contextIsolation,sandbox"
+                            />
+                          ))}
+                        </div>
                       </ResizablePanel>
-                    );
-                  })()}
+
+                      {activeSplitView && (
+                        <ResizablePanel className="w-1/2">
+                          <div className="relative w-full h-full">
+                            <webview
+                              key={`split-${activeSplitView.splitViewTabId}`}
+                              ref={(el) => {
+                                webviewRefs.current[
+                                  activeSplitView.splitViewTabId
+                                ] = el;
+                              }}
+                              src={
+                                allTabs.find(
+                                  (t) => t.id === activeSplitView.splitViewTabId
+                                )?.url || "about:blank"
+                              }
+                              className="absolute inset-0 w-full h-full flex"
+                              partition="persist:QuickBrowse"
+                              allowpopups={false}
+                              style={{
+                                pointerEvents:
+                                  shareCursor || isResizing ? "none" : "auto",
+                              }}
+                              webpreferences="contextIsolation,sandbox"
+                            />
+                          </div>
+                        </ResizablePanel>
+                      )}
+                    </>
+                  );
+                })()}
               </ResizablePanelGroup>
             ) : null}
             {watchTogether ? (
