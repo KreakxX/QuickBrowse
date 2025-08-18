@@ -22,6 +22,7 @@ import {
   GroupIcon,
   AppWindow,
   Scale,
+  PlayIcon,
 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -565,11 +566,15 @@ export default function BrowserLayout() {
     const handleWebViewEvents = () => {
       const activeWebView = webviewRefs.current[activeTabId] as any;
       if (!activeWebView) return;
-
+      let lastUrl = "";
+      let count = 0;
       const handleNavigate = (event: any, id: number) => {
-        console.log("Navigation detected:", event.url);
         let newUrl = event.url;
-
+        count++;
+        if (newUrl == lastUrl) return;
+        if (count % 2 == 0) {
+          lastUrl = event.url;
+        }
         try {
           const url = new URL(newUrl);
           url.searchParams.delete("zx");
@@ -582,7 +587,6 @@ export default function BrowserLayout() {
 
         if (id === activeTabId) {
           setCurrentUrl(newUrl);
-          setUrl(newUrl);
         }
 
         setTabs((prev) =>
@@ -595,6 +599,21 @@ export default function BrowserLayout() {
                 }
               : tab
           )
+        );
+
+        setTabGroups((groups) =>
+          groups.map((group) => ({
+            ...group,
+            tabs: group.tabs.map((tab) =>
+              tab.id === activeTabId
+                ? {
+                    ...tab,
+                    url: newUrl,
+                    favIcon: new URL(newUrl).origin + "/favicon.ico",
+                  }
+                : tab
+            ),
+          }))
         );
 
         window.electronAPI?.historysave(
@@ -1820,7 +1839,43 @@ export default function BrowserLayout() {
                   </Dialog>{" "}
                 </div>
               </div>
+              {/* <>
+                {(() => {
+                  const youtubePlaying = tabs.some(
+                    (tab) =>
+                      tab.url.includes("youtube") &&
+                      !tab.url.includes("google.com")
+                  );
+                  const youtubeTab = tabs.find(
+                    (tab) =>
+                      tab.url.includes("youtube") &&
+                      !tab.url.includes("google.com")
+                  );
+                  if (!youtubeTab) return;
+                  return youtubePlaying ? (
+                    <div
+                      style={{ backgroundColor: activeTheme.secondary }}
+                      className="px-3 w-full flex mt-4 rounded-lg py-2 gap-3  "
+                    >
+                      <img
+                        src="https://youtube.com/favicon.ico"
+                        className="h-4 w-4 mt-0.5"
+                        alt=""
+                      />
+                      <h1 className="text-sm truncate w-[60%]">
+                        {youtubeTab.title}
+                      </h1>
+
+                      <PlayIcon
+                        onClick={() => {}}
+                        className="h-4 w-4 mt-0.5"
+                      ></PlayIcon>
+                    </div>
+                  ) : null;
+                })()}
+              </> */}
             </div>
+
             <div className="px-3 mb-4 w-full">
               <div className="mt-6">
                 <div
@@ -1925,9 +1980,9 @@ export default function BrowserLayout() {
                     <div className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2">
                       {tabGroup.tabs.map((tab) => {
                         const activeSplitView = splitViewTabs.find(
-                          (sv) => sv.baseTabId === activeTabId
+                          (sv) => sv.baseTabId === tab.id
                         );
-                        return tab.id === activeTabId && activeSplitView ? (
+                        return activeSplitView ? (
                           <>
                             {(() => {
                               return (
@@ -2000,7 +2055,9 @@ export default function BrowserLayout() {
 
                                       {(() => {
                                         const baseTab = splitViewTabs.find(
-                                          (tab) => tab.baseTabId == activeTabId
+                                          (tab) =>
+                                            tab.baseTabId ==
+                                            activeSplitView.baseTabId
                                         );
                                         if (!baseTab) return;
                                         const splitTab = getAllTabs().find(
@@ -2066,7 +2123,7 @@ export default function BrowserLayout() {
                                                       splitViewTabs.find(
                                                         (splitView) =>
                                                           splitView.baseTabId ===
-                                                          activeTabId
+                                                          tab.id
                                                       );
                                                     if (existingSplitView) {
                                                       setSplitViewTabs((prev) =>
@@ -2097,7 +2154,7 @@ export default function BrowserLayout() {
                                                       color: splitViewTabs.some(
                                                         (splitView) =>
                                                           splitView.baseTabId ===
-                                                          activeTabId
+                                                          tab.id
                                                       )
                                                         ? activeTheme.acsent
                                                         : "#a1a1aa",
@@ -2120,11 +2177,10 @@ export default function BrowserLayout() {
                           <>
                             {(() => {
                               const activeSplitTab = splitViewTabs.find(
-                                (tab) => tab.baseTabId == activeTabId
+                                (splitTab) => splitTab.splitViewTabId == tab.id
                               );
 
-                              return activeSplitTab?.splitViewTabId ==
-                                tab.id ? null : (
+                              return activeSplitTab ? null : (
                                 <div
                                   key={tab.id}
                                   className="mb-2 relative group"
