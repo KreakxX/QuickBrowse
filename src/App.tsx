@@ -2968,10 +2968,10 @@ export default function BrowserLayout() {
 
                 const sortedVisibleTabs = visibleTabs.sort((a, b) => {
                   if (activeSplitView) {
-                    if (a.id === activeSplitView.baseTabId) return -1; // baseTab zuerst
-                    if (b.id === activeSplitView.baseTabId) return 1;
+                    if (a.id == activeSplitView.baseTabId) return -1; // a before b
+                    if (b.id == activeSplitView.baseTabId) return 0; // b after a
                   }
-                  return 0; // Reihenfolge sonst unverändert
+                  return 0;
                 });
                 return (
                   <ResizablePanelGroup
