@@ -2962,69 +2962,42 @@ export default function BrowserLayout() {
                   );
                   const allTabs = getAllTabs();
 
-                  return (
-                    <>
-                      <ResizablePanel
-                        className={!activeSplitView ? "w-full" : "w-1/2"}
-                      >
-                        <div className="relative w-full h-full">
-                          {allTabs.map((tab) => (
-                            <webview
-                              key={`primary-${tab.id}`}
-                              ref={(el) => {
-                                webviewRefs.current[tab.id] = el;
-                              }}
-                              src={tab.id === activeTabId ? url : tab.url}
-                              className={`absolute inset-0 w-full h-full ${
-                                tab.id === activeTabId ? "flex" : "hidden"
-                              }`}
-                              partition="persist:QuickBrowse"
-                              allowpopups={false}
-                              style={{
-                                pointerEvents:
-                                  shareCursor || isResizing ? "none" : "auto",
-                              }}
-                              webpreferences="contextIsolation,sandbox"
-                            />
-                          ))}
-                        </div>
-                      </ResizablePanel>
-                      <ResizableHandle
-                        style={{ borderColor: activeTheme.secondary }}
-                        className="border"
-                        onDragging={(isDragging) => {
-                          setIsResizing(isDragging);
-                        }}
-                      />
-                      {activeSplitView && (
-                        <ResizablePanel className="w-1/2">
-                          <div className="relative w-full h-full">
-                            <webview
-                              key={`split-${activeSplitView.splitViewTabId}`}
-                              ref={(el) => {
-                                webviewRefs.current[
-                                  activeSplitView.splitViewTabId
-                                ] = el;
-                              }}
-                              src={
-                                allTabs.find(
-                                  (t) => t.id === activeSplitView.splitViewTabId
-                                )?.url || "about:blank"
-                              }
-                              className="absolute inset-0 w-full h-full flex"
-                              partition="persist:QuickBrowse"
-                              allowpopups={false}
-                              style={{
-                                pointerEvents:
-                                  shareCursor || isResizing ? "none" : "auto",
-                              }}
-                              webpreferences="contextIsolation,sandbox"
-                            />
-                          </div>
+                  return allTabs.map((tab) => {
+                    const isActiveTab = tab.id === activeTabId;
+                    const isSplitViewTab =
+                      activeSplitView &&
+                      tab.id === activeSplitView.splitViewTabId;
+                    const shouldShow = isActiveTab || isSplitViewTab;
+
+                    return shouldShow ? (
+                      <>
+                        <ResizablePanel key={tab.id}>
+                          <webview
+                            ref={(el) => {
+                              webviewRefs.current[tab.id] = el;
+                            }}
+                            src={tab.url}
+                            className="w-full h-full flex"
+                            partition="persist:QuickBrowse"
+                            allowpopups={false}
+                            style={{
+                              pointerEvents:
+                                shareCursor || isResizing ? "none" : "auto",
+                            }}
+                            webpreferences="contextIsolation,sandbox"
+                          />
                         </ResizablePanel>
-                      )}
-                    </>
-                  );
+                        {activeSplitView?.baseTabId == tab.id ? (
+                          <ResizableHandle
+                            withHandle
+                            onDragging={(isDragging) =>
+                              setIsResizing(isDragging)
+                            }
+                          />
+                        ) : null}
+                      </>
+                    ) : null;
+                  });
                 })()}
               </ResizablePanelGroup>
             ) : null}

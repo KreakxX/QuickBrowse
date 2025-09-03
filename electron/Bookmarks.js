@@ -26,3 +26,5 @@ export function loadBookmarks(){
  return db.prepare(`SELECT * FROM bookmarks`).all();
 }
 
+
+
