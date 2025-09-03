@@ -48,6 +48,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import colors from "./colors";
+import { Switch } from "./components/ui/switch";
+import { Separator } from "./components/ui/separator";
 declare global {
   interface Window {
     electronAPI?: {
@@ -180,6 +182,10 @@ export default function BrowserLayout() {
   const [tabGroupId, setTabGroupId] = useState<number>(1);
   const [activeTabGroup, setActiveTabGroup] = useState<number>(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [openSettings, setOpenSettings] = useState<boolean>(false);
+  const [shareScrolling, setShareScrolling] = useState<boolean>(false);
+  const [allowSharedScrolling, setAllowSharedScrolling] =
+    useState<boolean>(false);
   const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
     useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
@@ -549,14 +555,16 @@ export default function BrowserLayout() {
             return;
           }
 
-          wsRef.current.send(
-            JSON.stringify({
-              type: "scrolled",
-              newYScrolled: scrollData.scrollTop,
-              newXScrolled: scrollData.scrollLeft,
-              TabId: activeTabId,
-            })
-          );
+          if (shareScrolling) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "scrolled",
+                newYScrolled: scrollData.scrollTop,
+                newXScrolled: scrollData.scrollLeft,
+                TabId: activeTabId,
+              })
+            );
+          }
 
           // websocket logic
         }
@@ -717,13 +725,15 @@ export default function BrowserLayout() {
         pausevideo();
         break;
       case "scrolled":
-        const activeWebView = webviewRefs.current[data.TabId] as any;
-        activeWebView.executeJavaScript(`
+        if (allowSharedScrolling) {
+          const activeWebView = webviewRefs.current[data.TabId] as any;
+          activeWebView.executeJavaScript(`
         window.scrollTo({
         top: ${data.newYScrolled},
         behavior: 'smooth'
         });
         `);
+        }
         break;
       case "skipped_forward":
         skipForward(data.time);
@@ -1527,10 +1537,11 @@ export default function BrowserLayout() {
                     <MousePointer2></MousePointer2>
                   </Button>
                   <Button
+                    onClick={() => {
+                      setOpenSettings(!openSettings);
+                    }}
                     style={{
-                      backgroundColor: !shareCursor
-                        ? activeTheme?.secondary
-                        : activeTheme.acsent,
+                      backgroundColor: activeTheme.secondary,
                     }}
                     className={`  rounded-lg  mt-2 `}
                   >
@@ -2202,6 +2213,50 @@ export default function BrowserLayout() {
                   >
                     Create new Tab Group
                   </Button>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog
+                open={openSettings}
+                onOpenChange={() => {
+                  setOpenSettings(!openSettings);
+                }}
+              >
+                <DialogContent
+                  className="max-w-[425px] border-zinc-800"
+                  style={{ background: activeTheme.hex }}
+                >
+                  <DialogClose asChild>
+                    <Button className="w-8 h-8">
+                      <X></X>
+                    </Button>
+                  </DialogClose>
+                  <DialogHeader>
+                    <DialogTitle className="text-white">
+                      Session Settings
+                    </DialogTitle>
+                  </DialogHeader>
+                  <Separator className="bg-zinc-500" />
+                  <div className="flex gap-4">
+                    <h1 className="text-white">Allow Scrolling</h1>
+                    <Switch
+                      checked={allowSharedScrolling}
+                      onCheckedChange={() => {
+                        setAllowSharedScrolling(!allowSharedScrolling);
+                      }}
+                      className="mt-1"
+                    ></Switch>
+                  </div>
+                  <div className="flex gap-4">
+                    <h1 className="text-white">Share Scrolling</h1>
+                    <Switch
+                      checked={shareScrolling}
+                      onCheckedChange={() => {
+                        setShareScrolling(!shareScrolling);
+                      }}
+                      className="mt-1"
+                    ></Switch>
+                  </div>
                 </DialogContent>
               </Dialog>
               <Dialog>
