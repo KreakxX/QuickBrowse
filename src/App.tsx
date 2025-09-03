@@ -2951,74 +2951,77 @@ export default function BrowserLayout() {
               />
             ) : null}
 
-            {!watchTogether &&
-              (() => {
-                const activeSplitView = splitViewTabs.find(
-                  (sv) => sv.baseTabId === activeTabId
-                );
-                const allTabs = getAllTabs();
+            {!watchTogether
+              ? (() => {
+                  const activeSplitView = splitViewTabs.find(
+                    (sv) => sv.baseTabId === activeTabId
+                  );
+                  const allTabs = getAllTabs();
 
-                const visibleTabs = allTabs.filter((tab) => {
-                  const isActiveTab = tab.id === activeTabId;
-                  const isSplitViewTab =
-                    activeSplitView &&
-                    tab.id === activeSplitView.splitViewTabId;
-                  return isActiveTab || isSplitViewTab;
-                });
+                  return (
+                    <ResizablePanelGroup
+                      direction="horizontal"
+                      className="w-full h-full"
+                    >
+                      {allTabs.map((tab) => {
+                        const isActiveTab = tab.id === activeTabId;
+                        const isSplitViewTab =
+                          activeSplitView &&
+                          tab.id === activeSplitView.splitViewTabId;
+                        const shouldShow = isActiveTab || isSplitViewTab;
 
-                const sortedVisibleTabs = visibleTabs.sort((a, b) => {
-                  if (activeSplitView) {
-                    if (a.id == activeSplitView.baseTabId) return -1; // a before b
-                    if (b.id == activeSplitView.baseTabId) return 1; // b before a
-                  }
-                  return 0;
-                });
-                return (
-                  <ResizablePanelGroup
-                    direction="horizontal"
-                    className="w-full h-full"
-                  >
-                    {sortedVisibleTabs.map((tab, index) => {
-                      const isLast = index === visibleTabs.length - 1;
+                        let cssOrder = 0;
+                        if (activeSplitView && shouldShow) {
+                          if (isActiveTab) {
+                            cssOrder = 1;
+                          } else if (isSplitViewTab) {
+                            cssOrder = 3;
+                          }
+                        }
 
-                      return (
-                        <Fragment key={tab.id}>
-                          <ResizablePanel
-                            id={`panel-${tab.id}`}
-                            defaultSize={50}
-                            minSize={20}
-                            style={{ display: "flex" }}
-                          >
-                            <webview
-                              ref={(el) => {
-                                webviewRefs.current[tab.id] = el;
-                              }}
-                              src={tab.url}
-                              className="w-full h-full flex"
-                              partition="persist:QuickBrowse"
-                              allowpopups={false}
+                        const showHandle = activeSplitView && isActiveTab;
+
+                        return (
+                          <Fragment key={tab.id}>
+                            <ResizablePanel
                               style={{
-                                pointerEvents:
-                                  shareCursor || isResizing ? "none" : "auto",
+                                flexBasis: 0,
+                                minWidth: 0,
+                                display: shouldShow ? "flex" : "none",
+                                order: cssOrder,
                               }}
-                              webpreferences="contextIsolation,sandbox"
-                            />
-                          </ResizablePanel>
-
-                          {!isLast && (
-                            <ResizableHandle
-                              key={`handle-${tab.id}`}
-                              className="bg-zinc-600"
-                              onDragging={setIsResizing}
-                            />
-                          )}
-                        </Fragment>
-                      );
-                    })}
-                  </ResizablePanelGroup>
-                );
-              })()}
-
+                            >
+                              <webview
+                                ref={(el) => {
+                                  webviewRefs.current[tab.id] = el;
+                                }}
+                                src={tab.url}
+                                className="w-full h-full flex"
+                                partition="persist:QuickBrowse"
+                                allowpopups={false}
+                                style={{
+                                  pointerEvents:
+                                    shareCursor || isResizing ? "none" : "auto",
+                                }}
+                                webpreferences="contextIsolation,sandbox"
+                              />
+                            </ResizablePanel>
+                            {showHandle && (
+                              <ResizableHandle
+                                style={{ order: 2 }}
+                                withHandle
+                                onDragging={(isDragging) =>
+                                  setIsResizing(isDragging)
+                                }
+                              />
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </ResizablePanelGroup>
+                  );
+                })()
+              : null}
             {watchTogether ? (
               <iframe
                 src={watchTogetherURL}
