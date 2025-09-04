@@ -2970,12 +2970,20 @@ export default function BrowserLayout() {
                           activeSplitView &&
                           tab.id === activeSplitView.splitViewTabId;
                         const shouldShow = isActiveTab || isSplitViewTab;
-
+                        let cssOrder = 0;
+                        if (isActiveTab) {
+                          cssOrder = 1;
+                        } else if (isSplitViewTab) {
+                          cssOrder = 2;
+                        } else {
+                          cssOrder = 0;
+                        }
                         return (
                           <Fragment key={tab.id}>
                             <ResizablePanel
                               key={tab.id}
                               style={{
+                                order: cssOrder,
                                 display: shouldShow ? "flex" : "none",
                               }}
                             >
@@ -2998,6 +3006,7 @@ export default function BrowserLayout() {
 
                             <ResizableHandle
                               className="bg-zinc-700"
+                              style={{ order: 2 }}
                               onDragging={(isDragging) =>
                                 setIsResizing(isDragging)
                               }
