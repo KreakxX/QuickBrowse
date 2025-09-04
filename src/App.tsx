@@ -2964,36 +2964,23 @@ export default function BrowserLayout() {
                       direction="horizontal"
                       className="w-full h-full"
                     >
-                      {allTabs.map((tab) => {
+                      {allTabs.map((tab, index) => {
                         const isActiveTab = tab.id === activeTabId;
                         const isSplitViewTab =
                           activeSplitView &&
                           tab.id === activeSplitView.splitViewTabId;
                         const shouldShow = isActiveTab || isSplitViewTab;
 
-                        const showHandle =
-                          (activeSplitView &&
-                            isActiveTab &&
-                            allTabs.indexOf(tab) <
-                              allTabs.findIndex(
-                                (t) => t.id === activeSplitView.splitViewTabId
-                              )) ||
-                          (activeSplitView &&
-                            tab.id === activeSplitView.splitViewTabId &&
-                            allTabs.indexOf(tab) <
-                              allTabs.findIndex(
-                                (t) => t.id === activeSplitView.baseTabId
-                              ));
                         return (
                           <Fragment key={tab.id}>
                             <ResizablePanel
+                              key={tab.id}
                               style={{
-                                flexBasis: 0,
-                                minWidth: 0,
                                 display: shouldShow ? "flex" : "none",
                               }}
                             >
                               <webview
+                                key={tab.id}
                                 ref={(el) => {
                                   webviewRefs.current[tab.id] = el;
                                 }}
@@ -3008,14 +2995,13 @@ export default function BrowserLayout() {
                                 webpreferences="contextIsolation,sandbox"
                               />
                             </ResizablePanel>
-                            {showHandle && (
-                              <ResizableHandle
-                                withHandle
-                                onDragging={(isDragging) =>
-                                  setIsResizing(isDragging)
-                                }
-                              />
-                            )}
+
+                            <ResizableHandle
+                              className="bg-zinc-700"
+                              onDragging={(isDragging) =>
+                                setIsResizing(isDragging)
+                              }
+                            />
                           </Fragment>
                         );
                       })}
