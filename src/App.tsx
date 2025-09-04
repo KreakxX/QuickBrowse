@@ -267,6 +267,7 @@ export default function BrowserLayout() {
   // method for getting all the Tabs to map and prevent rerenders in the webview section
   const getAllTabs = () => {
     const normalTabs = tabs;
+
     const groupTabs = tabGroups.flatMap((group) => group.tabs);
     return [...normalTabs, ...groupTabs];
   };
@@ -2970,17 +2971,19 @@ export default function BrowserLayout() {
                           tab.id === activeSplitView.splitViewTabId;
                         const shouldShow = isActiveTab || isSplitViewTab;
 
-                        let cssOrder = 0;
-                        if (activeSplitView && shouldShow) {
-                          if (isActiveTab) {
-                            cssOrder = 1;
-                          } else if (isSplitViewTab) {
-                            cssOrder = 3;
-                          }
-                        }
-
-                        const showHandle = activeSplitView && isActiveTab;
-
+                        const showHandle =
+                          (activeSplitView &&
+                            isActiveTab &&
+                            allTabs.indexOf(tab) <
+                              allTabs.findIndex(
+                                (t) => t.id === activeSplitView.splitViewTabId
+                              )) ||
+                          (activeSplitView &&
+                            tab.id === activeSplitView.splitViewTabId &&
+                            allTabs.indexOf(tab) <
+                              allTabs.findIndex(
+                                (t) => t.id === activeSplitView.baseTabId
+                              ));
                         return (
                           <Fragment key={tab.id}>
                             <ResizablePanel
@@ -2988,7 +2991,6 @@ export default function BrowserLayout() {
                                 flexBasis: 0,
                                 minWidth: 0,
                                 display: shouldShow ? "flex" : "none",
-                                order: cssOrder,
                               }}
                             >
                               <webview
@@ -3008,7 +3010,6 @@ export default function BrowserLayout() {
                             </ResizablePanel>
                             {showHandle && (
                               <ResizableHandle
-                                style={{ order: 2 }}
                                 withHandle
                                 onDragging={(isDragging) =>
                                   setIsResizing(isDragging)
