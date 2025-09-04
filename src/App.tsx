@@ -1156,19 +1156,17 @@ export default function BrowserLayout() {
     if (e.key === "Enter") {
       setUrl(currentUrl);
 
-      if (activeTabGroup == 0) {
-        setTabs((prevTabs) =>
-          prevTabs.map((tab) =>
-            tab.id === activeTabId
-              ? {
-                  ...tab,
-                  url: currentUrl,
-                  favIcon: currentUrl + "/favicon.ico",
-                }
-              : tab
-          )
-        );
-      }
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) =>
+          tab.id === activeTabId
+            ? {
+                ...tab,
+                url: currentUrl,
+                favIcon: currentUrl + "/favicon.ico",
+              }
+            : tab
+        )
+      );
     }
   };
 
@@ -1286,16 +1284,13 @@ export default function BrowserLayout() {
   // method for loading Search History
   const loadHistory = async () => {
     if (!window.electronAPI?.historyload) return;
-    const history = (await window.electronAPI.historyload()).slice(0, 50);
-    const fixedHistory = history
-      .map(({ id, url, favicon, timestamp }) => ({
-        id,
-        url,
-        favicon,
-        timestamp: timestamp,
-      }))
-      .slice(0, 50);
-
+    const history = await window.electronAPI.historyload();
+    const fixedHistory = history.map(({ id, url, favicon, timestamp }) => ({
+      id,
+      url,
+      favicon,
+      timestamp: timestamp,
+    }));
     const sortedHistory = fixedHistory
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 50);
@@ -2441,9 +2436,6 @@ export default function BrowserLayout() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
-                      onClick={() => {
-                        loadHistory();
-                      }}
                       style={{ backgroundColor: activeTheme?.secondary }}
                       className="rounded-lg mb-3 ml-2 w-8 h-10 "
                     >
