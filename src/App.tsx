@@ -2968,7 +2968,7 @@ export default function BrowserLayout() {
                         } else if (isSplitViewTab) {
                           cssOrder = 2;
                         } else {
-                          cssOrder = 0;
+                          cssOrder = 2;
                         }
                         return (
                           <Fragment key={tab.id}>
@@ -2996,7 +2996,7 @@ export default function BrowserLayout() {
                             </ResizablePanel>
 
                             <ResizableHandle
-                              className="bg-zinc-700"
+                              className="bg-zinc-900"
                               onDragging={(isDragging) =>
                                 setIsResizing(isDragging)
                               }
