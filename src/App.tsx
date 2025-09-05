@@ -2975,7 +2975,6 @@ export default function BrowserLayout() {
                             <ResizablePanel
                               key={tab.id}
                               style={{
-                                order: cssOrder,
                                 display: shouldShow ? "flex" : "none",
                               }}
                             >
@@ -2998,7 +2997,6 @@ export default function BrowserLayout() {
 
                             <ResizableHandle
                               className="bg-zinc-700"
-                              style={{ order: 2 }}
                               onDragging={(isDragging) =>
                                 setIsResizing(isDragging)
                               }
