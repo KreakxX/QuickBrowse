@@ -9,5 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadAllBookmarks: () => ipcRenderer.invoke("bookmarks:load"),
   addNewSavedtab: (url, favicon, id) => ipcRenderer.invoke('savedTabs:add',url,favicon,id),
   loadSavedTab: () => ipcRenderer.invoke('savedTabs:load'),
-  deleteSavedTab: (id) => ipcRenderer.invoke('savedTabs:delete',id)
+  deleteSavedTab: (id) => ipcRenderer.invoke('savedTabs:delete',id),
+  addNewYoutubePopup: (url)=> ipcRenderer.invoke('popup:create',url),
+  removeYoutubePopup: () => ipcRenderer.invoke("popup:close")
 })

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, nativeImage  } from 'electron';
+import { app,screen, BrowserWindow, session, nativeImage  } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
@@ -40,11 +40,69 @@ function createWindow() {
   win.loadURL('http://localhost:5173');
 }
 
+let PopUpWindow = null;
+
+// Function to add the new YoutubePopUp
+function createNewPopUp(url) {
+  if (PopUpWindow && !PopUpWindow.isDestroyed()) {
+    PopUpWindow.close();
+  }
+PopUpWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    title: url,
+    x: 100, 
+    y: 100, 
+    alwaysOnTop: true, 
+    skipTaskbar: true, 
+    transparent: true, 
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      webviewTag: true,
+      partition: "persist:main",
+    },
+  });
+
+  PopUpWindow.setMenuBarVisibility(false);
+  PopUpWindow.setAutoHideMenuBar(true);
+  PopUpWindow.loadURL(url);
+
+  PopUpWindow.on("close", () =>{
+    PopUpWindow = null;
+  });
+  PopUpWindow.setAlwaysOnTop(true, "screen-saver");
+
+  
+}
+
+
+function removeNewYoutubePopUp(){
+  if (PopUpWindow && !PopUpWindow.isDestroyed()) {
+    PopUpWindow.close();
+  }
+  PopUpWindow = null;
+}
+
+ipcMain.handle("popup:create", async(_event, url)=>{
+  createNewPopUp(url);
+})
+
+ipcMain.handle("popup:close",async (_event)=>{
+  removeNewYoutubePopUp();
+})
+
 ipcMain.handle('get-cookies', async (_event, partition) => {
   const ses = session.fromPartition(partition);
   const cookies = await ses.cookies.get({});
   return cookies;
 });
+
+
+
+
 
 
 

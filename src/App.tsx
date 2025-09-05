@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, use, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,6 +20,9 @@ import {
   ExternalLink,
   AppWindow,
   Settings,
+  LayoutPanelLeft,
+  LayoutPanelTop,
+  PictureInPicture,
 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -83,6 +86,8 @@ declare global {
         }>
       >;
       deleteSavedTab: (id: number) => void;
+      addNewYoutubePopup: (url: string) => void;
+      removeYoutubePopup: () => void;
     };
   }
 }
@@ -97,6 +102,7 @@ export default function BrowserLayout() {
   interface SplitView {
     baseTabId: number;
     splitViewTabId: number;
+    layout: string;
   }
   interface color {
     name: string;
@@ -198,10 +204,26 @@ export default function BrowserLayout() {
   ]);
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   const [sessionCode, setSessionCode] = useState<string>("");
-
+  const [youtubePopUp, setYoutubePopUp] = useState<boolean>(false);
+  const [youtubePopUpId, setYoutubePopUpId] = useState<number | null>(null);
   const sessionCodeRef = useRef(sessionCode);
 
   // TAB GROUP
+
+  const addOrRemoveYoutubePopUp = async (
+    popUp: boolean,
+    url: string,
+    id: number
+  ) => {
+    if (popUp) {
+      await window.electronAPI?.addNewYoutubePopup(url);
+      setYoutubePopUpId(id);
+    } else {
+      await window.electronAPI?.removeYoutubePopup();
+      setYoutubePopUpId(null);
+    }
+    setYoutubePopUp(popUp);
+  };
 
   // method for creating new Tab Groups (Workspaces)
   const createNewTabGroup = () => {
@@ -1950,6 +1972,7 @@ export default function BrowserLayout() {
                                                 >
                                                   <X className="h-3 w-3 text-zinc-400" />
                                                 </button>
+
                                                 <button
                                                   onClick={(e) => {
                                                     e.stopPropagation();
@@ -1968,18 +1991,6 @@ export default function BrowserLayout() {
                                                             tab.id
                                                         )
                                                       );
-                                                    } else {
-                                                      setSplitViewTabs(
-                                                        (prev) => [
-                                                          ...prev,
-                                                          {
-                                                            baseTabId:
-                                                              activeTabId,
-                                                            splitViewTabId:
-                                                              tab.id,
-                                                          },
-                                                        ]
-                                                      );
                                                     }
                                                   }}
                                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
@@ -1996,6 +2007,63 @@ export default function BrowserLayout() {
                                                     }}
                                                     className="h-4 w-4"
                                                   />
+                                                </button>
+                                                <button
+                                                  onClick={() => {
+                                                    if (
+                                                      activeSplitView.layout ==
+                                                      "horizontal"
+                                                    ) {
+                                                      setSplitViewTabs((prev) =>
+                                                        prev.map((tab) => {
+                                                          if (
+                                                            tab.baseTabId ==
+                                                            activeSplitView.baseTabId
+                                                          ) {
+                                                            return {
+                                                              ...tab,
+                                                              layout:
+                                                                "vertical",
+                                                            };
+                                                          }
+                                                          return tab;
+                                                        })
+                                                      );
+                                                    } else {
+                                                      setSplitViewTabs((prev) =>
+                                                        prev.map((tab) => {
+                                                          if (
+                                                            tab.baseTabId ==
+                                                            activeSplitView.baseTabId
+                                                          ) {
+                                                            return {
+                                                              ...tab,
+                                                              layout:
+                                                                "horizontal",
+                                                            };
+                                                          }
+                                                          return tab;
+                                                        })
+                                                      );
+                                                    }
+                                                  }}
+                                                >
+                                                  {activeSplitView.layout ==
+                                                  "horizontal" ? (
+                                                    <LayoutPanelLeft
+                                                      style={{
+                                                        color: "#a1a1aa",
+                                                      }}
+                                                      className="h-4 w-4"
+                                                    />
+                                                  ) : (
+                                                    <LayoutPanelTop
+                                                      style={{
+                                                        color: "#a1a1aa",
+                                                      }}
+                                                      className="h-4 w-4"
+                                                    />
+                                                  )}
                                                 </button>
                                               </div>
                                             )}
@@ -2021,6 +2089,8 @@ export default function BrowserLayout() {
                                   className="mb-2 relative group"
                                 >
                                   <button
+                                    onMouseEnter={() => setHoveredTab(tab.id)}
+                                    onMouseLeave={() => setHoveredTab(null)}
                                     onClick={() => switchToTab(tab.id)}
                                     style={{
                                       backgroundColor: activeTheme.secondary,
@@ -2053,66 +2123,92 @@ export default function BrowserLayout() {
                                     <div className="truncate flex-1 text-sm mr-2 text-white">
                                       {tab.title || tab.url}
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (tabGroup.title == "Base") {
-                                            closeTab(tab.id);
-                                          } else {
-                                            removeTabFromTabGroup(tab.id);
-                                          }
-                                        }}
-                                        className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                      >
-                                        <X className="h-4 w-4 text-zinc-400" />
-                                      </button>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (activeTabId !== tab.id) {
-                                            const existingSplitView =
-                                              splitViewTabs.find(
-                                                (splitView) =>
-                                                  splitView.splitViewTabId ===
-                                                  tab.id
-                                              );
-                                            if (existingSplitView) {
-                                              setSplitViewTabs((prev) =>
-                                                prev.filter(
-                                                  (splitView) =>
-                                                    splitView.splitViewTabId !==
-                                                    tab.id
-                                                )
-                                              );
+                                    {hoveredTab == tab.id ? (
+                                      <div className="flex items-center gap-1">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (tabGroup.title == "Base") {
+                                              closeTab(tab.id);
                                             } else {
-                                              setSplitViewTabs((prev) => [
-                                                ...prev,
-                                                {
-                                                  baseTabId: activeTabId,
-                                                  splitViewTabId: tab.id,
-                                                },
-                                              ]);
+                                              removeTabFromTabGroup(tab.id);
                                             }
-                                          }
-                                        }}
-                                        className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                      >
-                                        <Scaling
-                                          style={{
-                                            color:
-                                              splitViewTabs.some(
-                                                (splitView) =>
-                                                  splitView.splitViewTabId ===
-                                                  tab.id
-                                              ) && activeTabId !== tab.id
-                                                ? activeTheme.acsent
-                                                : "#a1a1aa",
                                           }}
-                                          className="h-4 w-4"
-                                        />
-                                      </button>
-                                    </div>
+                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                        >
+                                          <X className="h-4 w-4 text-zinc-400" />
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (activeTabId !== tab.id) {
+                                              const existingSplitView =
+                                                splitViewTabs.find(
+                                                  (splitView) =>
+                                                    splitView.splitViewTabId ===
+                                                    tab.id
+                                                );
+                                              if (existingSplitView) {
+                                                setSplitViewTabs((prev) =>
+                                                  prev.filter(
+                                                    (splitView) =>
+                                                      splitView.splitViewTabId !==
+                                                      tab.id
+                                                  )
+                                                );
+                                              } else {
+                                                setSplitViewTabs((prev) => [
+                                                  ...prev,
+                                                  {
+                                                    baseTabId: activeTabId,
+                                                    splitViewTabId: tab.id,
+                                                    layout: "horizontal",
+                                                  },
+                                                ]);
+                                              }
+                                            }
+                                          }}
+                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                        >
+                                          <Scaling
+                                            style={{
+                                              color:
+                                                splitViewTabs.some(
+                                                  (splitView) =>
+                                                    splitView.splitViewTabId ===
+                                                    tab.id
+                                                ) && activeTabId !== tab.id
+                                                  ? activeTheme.acsent
+                                                  : "#a1a1aa",
+                                            }}
+                                            className="h-4 w-4"
+                                          />
+                                        </button>
+
+                                        <button
+                                          onClick={async (e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation;
+                                            await addOrRemoveYoutubePopUp(
+                                              !youtubePopUp,
+                                              tab.url,
+                                              tab.id
+                                            );
+                                          }}
+                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                        >
+                                          <PictureInPicture
+                                            className="h-4 w-4"
+                                            style={{
+                                              color:
+                                                youtubePopUpId == tab.id
+                                                  ? activeTheme.acsent
+                                                  : "#a1a1aa",
+                                            }}
+                                          />
+                                        </button>
+                                      </div>
+                                    ) : null}
                                   </button>
                                 </div>
                               );
@@ -2953,7 +3049,13 @@ export default function BrowserLayout() {
 
                   return (
                     <ResizablePanelGroup
-                      direction="horizontal"
+                      direction={
+                        activeSplitView &&
+                        (activeSplitView.layout === "horizontal" ||
+                          activeSplitView.layout === "vertical")
+                          ? activeSplitView.layout
+                          : "horizontal"
+                      }
                       className="w-full h-full"
                     >
                       {allTabs.map((tab, index) => {
