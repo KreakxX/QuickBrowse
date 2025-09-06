@@ -3236,20 +3236,11 @@ export default function BrowserLayout() {
                                 key={tab.id}
                                 ref={(el) => {
                                   webviewRefs.current[tab.id] = el;
-                                  if (el) {
-                                    el.addEventListener("new-window", (e) => {
-                                      console.log(
-                                        "Webview requested popup URL:",
-                                        e
-                                      );
-                                      // ipcRenderer.send("open-popup", e.url);
-                                    });
-                                  }
                                 }}
                                 src={tab.url}
                                 className="w-full h-full flex"
                                 partition="persist:QuickBrowse"
-                                allowpopups={true}
+                                allowpopups="true"
                                 style={{
                                   pointerEvents:
                                     shareCursor || isResizing ? "none" : "auto",
