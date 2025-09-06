@@ -79,6 +79,34 @@ PopUpWindow = new BrowserWindow({
 }
 
 
+function createSecureOauth2PopUp(){
+    win.webContents.setWindowOpenHandler(({ url }) => {
+    // create a popup window for OAuth flows (Google, etc.)
+      console.log("Popup requested:", url); // <- log the URL
+
+    const popup = new BrowserWindow({
+      parent: win, // optional, keeps focus relationship
+      modal: false,
+      width: 500,
+      height: 600,
+      webPreferences: {
+        contextIsolation: true,
+        sandbox: false, // ❗ must be false, or Google login breaks
+        nodeIntegration: false,
+        partition: "persist:main", // share cookies/session
+      },
+    });
+
+    popup.loadURL(url);
+
+    
+
+    return { action: "deny" };
+      });
+
+}
+
+
 function removeNewYoutubePopUp(){
   if (PopUpWindow && !PopUpWindow.isDestroyed()) {
     PopUpWindow.close();

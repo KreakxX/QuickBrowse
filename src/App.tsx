@@ -53,6 +53,8 @@ import {
 import colors from "./colors";
 import { Switch } from "./components/ui/switch";
 import { Separator } from "./components/ui/separator";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 declare global {
   interface Window {
     electronAPI?: {
@@ -1395,7 +1397,6 @@ export default function BrowserLayout() {
     setBookMarkTabs(fixedBookmarks);
   };
 
-  // method for getting grid columns for displaying the pinned Tabs responsive
   const getGridColumns = () => {
     const tabCount = savedTabs.length;
     if (tabCount === 0) return "1fr";
@@ -1404,6 +1405,36 @@ export default function BrowserLayout() {
   };
 
   const ActiveTabCurrentUrl = tabs.find((tab) => tab.id == activeTabId);
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const { source, destination } = result;
+    const groupId = parseInt(source.droppableId);
+
+    if (source.droppableId !== destination.droppableId) {
+      return;
+    }
+
+    if (groupId === 0) {
+      const newTabs = [...tabs];
+      const [removed] = newTabs.splice(source.index, 1); // removes one elemnt from the index and saves the tab
+      newTabs.splice(destination.index, 0, removed); // fügt Element dort ein 0 means no element deleted
+      setTabs(newTabs);
+    } else {
+      setTabGroups((prevGroups) => {
+        return prevGroups.map((group) => {
+          if (group.id === groupId) {
+            const newTabs = Array.from(group.tabs);
+            const [removed] = newTabs.splice(source.index, 1);
+            newTabs.splice(destination.index, 0, removed);
+            return { ...group, tabs: newTabs };
+          }
+          return group;
+        });
+      });
+    }
+  };
 
   return (
     <div className="h-screen bg-zinc-800   text-white flex flex-col ">
@@ -1783,71 +1814,76 @@ export default function BrowserLayout() {
             </div>
 
             <div className="flex-1 p-3  ">
-              <div
-                ref={scrollContainerRef}
-                className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
-                style={{
-                  maxHeight: "65vh",
-                  minHeight: "65vh",
-                  overflowY: "scroll",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
-                onScroll={handleScroll}
-              >
-                {getAllTabGroups().map((tabGroup, groupIndex) => (
-                  <div
-                    key={groupIndex}
-                    className="flex-shrink-0 w-full snap-start mb-2"
-                  >
-                    <ContextMenu>
-                      <ContextMenuTrigger>
-                        <h2 className="text-gray-400 font-semibold text-sm mb-5 ml-2">
-                          {tabGroup.title}
-                        </h2>
-                      </ContextMenuTrigger>
-                      <ContextMenuContent>
-                        <ContextMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteTabGroup(tabGroup.id);
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div
+                  ref={scrollContainerRef}
+                  className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
+                  style={{
+                    maxHeight: "65vh",
+                    minHeight: "65vh",
+                    overflowY: "scroll",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                  }}
+                  onScroll={handleScroll}
+                >
+                  {getAllTabGroups().map((tabGroup, groupIndex) => (
+                    <div
+                      key={groupIndex}
+                      className="flex-shrink-0 w-full snap-start mb-2"
+                    >
+                      <ContextMenu>
+                        <ContextMenuTrigger>
+                          <h2 className="text-gray-400 font-semibold text-sm mb-5 ml-2">
+                            {tabGroup.title}
+                          </h2>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTabGroup(tabGroup.id);
+                            }}
+                          >
+                            Delete
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                      <div className="mb-3">
+                        <Button
+                          onClick={() => {
+                            if (tabGroup.title == "Base") {
+                              setAddNewTabSearchBar(true);
+                            } else {
+                              setAddNewTabSearchBarWorkspace(true);
+                            }
                           }}
+                          variant="ghost"
+                          size="sm"
+                          className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
                         >
-                          Delete
-                        </ContextMenuItem>
-                      </ContextMenuContent>
-                    </ContextMenu>
-                    <div className="  mb-3 ">
-                      <Button
-                        onClick={() => {
-                          if (tabGroup.title == "Base") {
-                            setAddNewTabSearchBar(true);
-                          } else {
-                            setAddNewTabSearchBarWorkspace(true);
-                          }
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className=" w-full justify-start text-gray-400 hover:bg-transparent hover:text-gray-500  "
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New tab
-                      </Button>
-                    </div>
-                    <div className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2">
-                      {tabGroup.tabs.map((tab) => {
-                        const activeSplitView = splitViewTabs.find(
-                          (sv) => sv.baseTabId === tab.id
-                        );
-                        return activeSplitView ? (
-                          <>
-                            {(() => {
-                              return (
-                                <div
-                                  key={tab.id}
-                                  className="mb-2 relative group"
-                                >
+                          <Plus className="h-4 w-4 mr-2" />
+                          New tab
+                        </Button>
+                      </div>
+                      <Droppable droppableId={tabGroup.id.toString()}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2"
+                          >
+                            {tabGroup.tabs.map((tab, index) => {
+                              const activeSplitView = splitViewTabs.find(
+                                (splitViewTab) =>
+                                  splitViewTab.baseTabId == tab.id
+                              );
+                              return activeSplitView ? (
+                                <div key={tab.id}>
                                   <button
+                                    onMouseEnter={() => setHoveredTab(tab.id)}
+                                    onMouseLeave={() => setHoveredTab(null)}
+                                    onClick={() => switchToTab(tab.id)}
                                     style={{
                                       backgroundColor: activeTheme.secondary,
                                       borderColor:
@@ -1863,8 +1899,7 @@ export default function BrowserLayout() {
                                         : tab.id === activeTabId
                                         ? "border"
                                         : "border-0"
-                                    }    flex items-center justify-start text-left px-3 rounded  rounded-lg`}
-                                    onClick={() => switchToTab(tab.id)}
+                                    } flex items-center justify-start text-left px-3 rounded-lg`}
                                   >
                                     <div className="flex w-full gap-1">
                                       <div
@@ -1991,6 +2026,20 @@ export default function BrowserLayout() {
                                                             tab.id
                                                         )
                                                       );
+                                                    } else {
+                                                      setSplitViewTabs(
+                                                        (prev) => [
+                                                          ...prev,
+                                                          {
+                                                            baseTabId:
+                                                              activeTabId,
+                                                            splitViewTabId:
+                                                              tab.id,
+                                                            layout:
+                                                              "horizontal",
+                                                          },
+                                                        ]
+                                                      );
                                                     }
                                                   }}
                                                   className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
@@ -2073,153 +2122,197 @@ export default function BrowserLayout() {
                                     </div>
                                   </button>
                                 </div>
-                              );
-                            })()}
-                          </>
-                        ) : (
-                          <>
-                            {(() => {
-                              const activeSplitTab = splitViewTabs.find(
-                                (splitTab) => splitTab.splitViewTabId == tab.id
-                              );
+                              ) : (
+                                <>
+                                  {(() => {
+                                    const activeSplitTab = splitViewTabs.find(
+                                      (splitTab) =>
+                                        splitTab.splitViewTabId == tab.id
+                                    );
 
-                              return activeSplitTab ? null : (
-                                <div
-                                  key={tab.id}
-                                  className="mb-2 relative group"
-                                >
-                                  <button
-                                    onMouseEnter={() => setHoveredTab(tab.id)}
-                                    onMouseLeave={() => setHoveredTab(null)}
-                                    onClick={() => switchToTab(tab.id)}
-                                    style={{
-                                      backgroundColor: activeTheme.secondary,
-                                      borderColor:
-                                        tab.id === activeTabIdSession && shared
-                                          ? activeTheme.acsent
-                                          : tab.id === activeTabId
-                                          ? "#52525b"
-                                          : undefined,
-                                    }}
-                                    className={`w-full h-10 ${
-                                      tab.id === activeTabIdSession && shared
-                                        ? "border"
-                                        : tab.id === activeTabId
-                                        ? "border"
-                                        : "border-0"
-                                    } flex items-center justify-start text-left px-3 rounded-lg`}
-                                  >
-                                    {tab.favIcon && (
-                                      <img
-                                        src={tab.favIcon || "/placeholder.svg"}
-                                        alt="favicon"
-                                        className="w-5 h-5 mr-2"
-                                        onError={(e) =>
-                                          (e.currentTarget.style.display =
-                                            "none")
-                                        }
-                                      />
-                                    )}
-                                    <div className="truncate flex-1 text-sm mr-2 text-white">
-                                      {tab.title || tab.url}
-                                    </div>
-                                    {hoveredTab == tab.id ? (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (tabGroup.title == "Base") {
-                                              closeTab(tab.id);
-                                            } else {
-                                              removeTabFromTabGroup(tab.id);
-                                            }
-                                          }}
-                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                        >
-                                          <X className="h-4 w-4 text-zinc-400" />
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (activeTabId !== tab.id) {
-                                              const existingSplitView =
-                                                splitViewTabs.find(
-                                                  (splitView) =>
-                                                    splitView.splitViewTabId ===
-                                                    tab.id
-                                                );
-                                              if (existingSplitView) {
-                                                setSplitViewTabs((prev) =>
-                                                  prev.filter(
-                                                    (splitView) =>
-                                                      splitView.splitViewTabId !==
-                                                      tab.id
-                                                  )
-                                                );
-                                              } else {
-                                                setSplitViewTabs((prev) => [
-                                                  ...prev,
-                                                  {
-                                                    baseTabId: activeTabId,
-                                                    splitViewTabId: tab.id,
-                                                    layout: "horizontal",
-                                                  },
-                                                ]);
+                                    return activeSplitTab ? null : (
+                                      <Draggable
+                                        key={tab.id.toString()}
+                                        draggableId={tab.id.toString()}
+                                        index={index}
+                                      >
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            style={{
+                                              ...provided.draggableProps.style,
+                                              opacity: snapshot.isDragging
+                                                ? 0.5
+                                                : 1,
+                                            }}
+                                            className="mb-2 relative group"
+                                          >
+                                            <div
+                                              onMouseEnter={() =>
+                                                setHoveredTab(tab.id)
                                               }
-                                            }
-                                          }}
-                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                        >
-                                          <Scaling
-                                            style={{
-                                              color:
-                                                splitViewTabs.some(
-                                                  (splitView) =>
-                                                    splitView.splitViewTabId ===
-                                                    tab.id
-                                                ) && activeTabId !== tab.id
-                                                  ? activeTheme.acsent
-                                                  : "#a1a1aa",
-                                            }}
-                                            className="h-4 w-4"
-                                          />
-                                        </button>
+                                              onMouseLeave={() =>
+                                                setHoveredTab(null)
+                                              }
+                                              onClick={() =>
+                                                switchToTab(tab.id)
+                                              }
+                                              style={{
+                                                backgroundColor:
+                                                  activeTheme.secondary,
+                                                borderColor:
+                                                  tab.id ===
+                                                    activeTabIdSession && shared
+                                                    ? activeTheme.acsent
+                                                    : tab.id === activeTabId
+                                                    ? "#52525b"
+                                                    : undefined,
+                                              }}
+                                              className={`w-full h-10 ${
+                                                tab.id === activeTabIdSession &&
+                                                shared
+                                                  ? "border"
+                                                  : tab.id === activeTabId
+                                                  ? "border"
+                                                  : "border-0"
+                                              } flex items-center justify-start text-left px-3 rounded-lg`}
+                                            >
+                                              {tab.favIcon && (
+                                                <img
+                                                  src={
+                                                    tab.favIcon ||
+                                                    "/placeholder.svg"
+                                                  }
+                                                  alt="favicon"
+                                                  className="w-5 h-5 mr-2"
+                                                  onError={(e) =>
+                                                    (e.currentTarget.style.display =
+                                                      "none")
+                                                  }
+                                                />
+                                              )}
+                                              <div className="truncate flex-1 text-sm mr-2 text-white">
+                                                {tab.title || tab.url}
+                                              </div>
+                                              {hoveredTab == tab.id ? (
+                                                <div className="flex items-center gap-1">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (
+                                                        tabGroup.title == "Base"
+                                                      ) {
+                                                        closeTab(tab.id);
+                                                      } else {
+                                                        removeTabFromTabGroup(
+                                                          tab.id
+                                                        );
+                                                      }
+                                                    }}
+                                                    className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                                  >
+                                                    <X className="h-4 w-4 text-zinc-400" />
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (
+                                                        activeTabId !== tab.id
+                                                      ) {
+                                                        const existingSplitView =
+                                                          splitViewTabs.find(
+                                                            (splitView) =>
+                                                              splitView.splitViewTabId ===
+                                                              tab.id
+                                                          );
+                                                        if (existingSplitView) {
+                                                          setSplitViewTabs(
+                                                            (prev) =>
+                                                              prev.filter(
+                                                                (splitView) =>
+                                                                  splitView.splitViewTabId !==
+                                                                  tab.id
+                                                              )
+                                                          );
+                                                        } else {
+                                                          setSplitViewTabs(
+                                                            (prev) => [
+                                                              ...prev,
+                                                              {
+                                                                baseTabId:
+                                                                  activeTabId,
+                                                                splitViewTabId:
+                                                                  tab.id,
+                                                                layout:
+                                                                  "horizontal",
+                                                              },
+                                                            ]
+                                                          );
+                                                        }
+                                                      }
+                                                    }}
+                                                    className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                                  >
+                                                    <Scaling
+                                                      style={{
+                                                        color:
+                                                          splitViewTabs.some(
+                                                            (splitView) =>
+                                                              splitView.splitViewTabId ===
+                                                              tab.id
+                                                          ) &&
+                                                          activeTabId !== tab.id
+                                                            ? activeTheme.acsent
+                                                            : "#a1a1aa",
+                                                      }}
+                                                      className="h-4 w-4"
+                                                    />
+                                                  </button>
 
-                                        <button
-                                          onClick={async (e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation;
-                                            await addOrRemoveYoutubePopUp(
-                                              !youtubePopUp,
-                                              tab.url,
-                                              tab.id
-                                            );
-                                          }}
-                                          className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
-                                        >
-                                          <PictureInPicture
-                                            className="h-4 w-4"
-                                            style={{
-                                              color:
-                                                youtubePopUpId == tab.id
-                                                  ? activeTheme.acsent
-                                                  : "#a1a1aa",
-                                            }}
-                                          />
-                                        </button>
-                                      </div>
-                                    ) : null}
-                                  </button>
-                                </div>
+                                                  <button
+                                                    onClick={async (e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation;
+                                                      await addOrRemoveYoutubePopUp(
+                                                        !youtubePopUp,
+                                                        tab.url,
+                                                        tab.id
+                                                      );
+                                                    }}
+                                                    className="h-6 w-6 bg-transparent hover:bg-zinc-600 rounded flex items-center justify-center"
+                                                  >
+                                                    <PictureInPicture
+                                                      className="h-4 w-4"
+                                                      style={{
+                                                        color:
+                                                          youtubePopUpId ==
+                                                          tab.id
+                                                            ? activeTheme.acsent
+                                                            : "#a1a1aa",
+                                                      }}
+                                                    />
+                                                  </button>
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    );
+                                  })()}
+                                </>
                               );
-                            })()}
-                          </>
-                        );
-                      })}
+                            })}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </DragDropContext>
             </div>
             {getAllTabGroups().length >= 2 ? (
               <div className="flex justify-center gap-2 mb-2 ">
@@ -3084,11 +3177,20 @@ export default function BrowserLayout() {
                                 key={tab.id}
                                 ref={(el) => {
                                   webviewRefs.current[tab.id] = el;
+                                  if (el) {
+                                    el.addEventListener("new-window", (e) => {
+                                      console.log(
+                                        "Webview requested popup URL:",
+                                        e
+                                      );
+                                      // ipcRenderer.send("open-popup", e.url);
+                                    });
+                                  }
                                 }}
                                 src={tab.url}
                                 className="w-full h-full flex"
                                 partition="persist:QuickBrowse"
-                                allowpopups={false}
+                                allowpopups={true}
                                 style={{
                                   pointerEvents:
                                     shareCursor || isResizing ? "none" : "auto",
