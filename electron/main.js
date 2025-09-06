@@ -17,7 +17,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: transparentIcon,
+    icon: path.join(__dirname, '../public/Logo.png'),
     title: "",
     titleBarOverlay: {
   color: "#09090b",   // Hintergrund
@@ -54,8 +54,7 @@ PopUpWindow = new BrowserWindow({
     x: 100, 
     y: 100, 
     alwaysOnTop: true, 
-    skipTaskbar: true, 
-    transparent: true, 
+    
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

@@ -23,6 +23,7 @@ import {
   LayoutPanelLeft,
   LayoutPanelTop,
   PictureInPicture,
+  GripVertical,
 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
@@ -138,7 +139,7 @@ export default function BrowserLayout() {
   const [currentUrl, setCurrentUrl] = useState<string>(
     "https://quickbrowse.vercel.app"
   );
-  const [showSidebar] = useState<boolean>(true);
+  const [showSidebar, setShowSideBar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [activeTabId, setActiveTabId] = useState<number>(0);
@@ -164,6 +165,7 @@ export default function BrowserLayout() {
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   const [TabGroupOpen, setTabGroupOpen] = useState<boolean>(false);
+
   const [activeTheme, setActiveTheme] = useState<color>({
     name: "dark",
     hex: "#09090b",
@@ -2859,10 +2861,12 @@ export default function BrowserLayout() {
                                 );
                                 setAddNewTabSearchBarWorkspace(false);
                               }}
-                              className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2 w-full truncate"
+                              className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2  "
                             >
                               <Search></Search>
-                              {currentUrl} — Search with Google
+                              <p className="text-xs truncate max-w-[100px]">
+                                {currentUrl} —— Search with Google
+                              </p>
                             </Button>
                           </div>
                         ) : (
@@ -2960,7 +2964,8 @@ export default function BrowserLayout() {
                               className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2 w-full truncate"
                             >
                               <Search></Search>
-                              {currentUrl} — Search with Google
+                              <p className="text-xs truncate">{currentUrl}</p>
+                              <p>— Search with Google</p>
                             </Button>
                           </div>
                         ) : (
@@ -3171,7 +3176,17 @@ export default function BrowserLayout() {
             </div>
           </div>
         ) : null}
-
+        <div
+          style={{ background: activeTheme.hex }}
+          className="flex justify-center items-center"
+        >
+          <GripVertical
+            onClick={() => {
+              setShowSideBar(!showSidebar);
+            }}
+            className="h-6 w-4"
+          ></GripVertical>
+        </div>
         <div className="flex-1 bg-zinc-900 relative min-h-screen">
           <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
             {activeTabId === activeTabIdSession && shared ? (

@@ -13,8 +13,8 @@
     "dist": "electron-builder"
   },
   "build": {
-    "appId": "com.mycompany.myapp",
-    "productName": "MyElectronApp",
+    "appId": "com.quickbrowse.quickbrowse",
+    "productName": "quickbrowse",
     "files": [
       "electron/**/*",
       "dist/**/*",
@@ -22,7 +22,8 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "public/Logo.ico"
     }
   },
   "dependencies": {
