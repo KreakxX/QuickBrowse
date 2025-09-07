@@ -211,7 +211,14 @@ export default function BrowserLayout() {
   const [youtubePopUp, setYoutubePopUp] = useState<boolean>(false);
   const [youtubePopUpId, setYoutubePopUpId] = useState<number | null>(null);
   const sessionCodeRef = useRef(sessionCode);
+  const allowSharedScrollingRef = useRef(allowSharedScrolling);
+  const shareScrollingRef = useRef(shareScrolling);
 
+  const [shareScreen, setShareScreen] = useState<boolean>(false);
+  const [allowScreen, setAllowScreen] = useState<boolean>(false);
+
+  const shareScreenRef = useRef(shareScreen);
+  const allowScreenRef = useRef(allowScreen);
   // TAB GROUP
 
   const addOrRemoveYoutubePopUp = async (
@@ -361,6 +368,22 @@ export default function BrowserLayout() {
     sessionCodeRef.current = sessionCode;
   }, [sessionCode]);
 
+  useEffect(() => {
+    allowSharedScrollingRef.current = allowSharedScrolling;
+  }, [allowSharedScrolling]);
+
+  useEffect(() => {
+    shareScrollingRef.current = shareScrolling;
+  }, [shareScrolling]);
+
+  useEffect(() => {
+    allowScreenRef.current = allowScreen;
+  }, [allowScreen]);
+
+  useEffect(() => {
+    shareScreenRef.current = shareScreen;
+  }, [shareScreen]);
+
   // UseEffect for handling connections with the websocket
   useEffect(() => {
     const connectWebSocket = () => {
@@ -401,6 +424,37 @@ export default function BrowserLayout() {
       "poe.com",
       "character.ai",
       "huggingface.co",
+      "accounts.google.com",
+      "oauth.googleusercontent.com",
+      "googleapis.com",
+      "accounts.youtube.com",
+      "myaccount.google.com",
+      "console.cloud.google.com",
+      "console.developers.google.com",
+      "developers.google.com",
+      "firebase.google.com",
+      "console.firebase.google.com",
+
+      "login.microsoftonline.com",
+      "account.microsoft.com",
+      "login.live.com",
+      "github.com/login",
+      "api.github.com",
+      "facebook.com/login",
+      "graph.facebook.com",
+      "twitter.com/oauth",
+      "api.twitter.com",
+      "linkedin.com/oauth",
+      "api.linkedin.com",
+
+      "drive.google.com",
+      "docs.google.com",
+      "sheets.google.com",
+      "slides.google.com",
+      "mail.google.com",
+      "calendar.google.com",
+      "photos.google.com",
+      "contacts.google.com",
     ];
     const hostname = new URL(url).hostname;
     return blockedHostnames.some((blocked) => hostname.includes(blocked)); // also checks for subdomains basically maps through some(all) and checks if its included
@@ -472,7 +526,7 @@ export default function BrowserLayout() {
           new URL(newUrl).origin + "/favicon.ico"
         );
         if (shared && wsRef.current?.readyState === WebSocket.OPEN) {
-          if (tabGroups.length == 0) {
+          if (tabGroups.length == 0 && shareScreenRef.current) {
             wsRef.current.send(
               JSON.stringify({
                 type: "url_changed",
@@ -482,7 +536,7 @@ export default function BrowserLayout() {
               })
             );
           } else {
-            if (activeTabGroup == 0) {
+            if (activeTabGroup == 0 && shareScreenRef.current) {
               wsRef.current.send(
                 JSON.stringify({
                   type: "url_changed",
@@ -610,7 +664,7 @@ export default function BrowserLayout() {
             return;
           }
 
-          if (shareScrolling) {
+          if (shareScrollingRef.current) {
             wsRef.current.send(
               JSON.stringify({
                 type: "scrolled",
@@ -724,29 +778,31 @@ export default function BrowserLayout() {
         setYSession(data.y);
         break;
       case "url_changed":
-        setTabs((prev) =>
-          prev.map((tab) =>
-            tab.id === data.tab.id
-              ? {
-                  ...tab,
-                  url: data.tab.url,
-                  favIcon: new URL(data.tab.url).origin + "/favicon.ico",
-                }
-              : tab
-          )
-        );
-        if (data.tab.id === activeTabIdRef.current) {
-          setCurrentUrl(data.tab.url);
-          setUrl(data.tab.url);
-          const webview = webviewRefs.current[data.tab.id] as any;
-          if (webview && webview.src !== data.tab.url) {
-            console.log("Navigating webview to:", data.tab.url);
-            webview.src = data.tab.url;
+        if (allowScreenRef.current) {
+          setTabs((prev) =>
+            prev.map((tab) =>
+              tab.id === data.tab.id
+                ? {
+                    ...tab,
+                    url: data.tab.url,
+                    favIcon: new URL(data.tab.url).origin + "/favicon.ico",
+                  }
+                : tab
+            )
+          );
+          if (data.tab.id === activeTabIdRef.current) {
+            setCurrentUrl(data.tab.url);
+            setUrl(data.tab.url);
+            const webview = webviewRefs.current[data.tab.id] as any;
+            if (webview && webview.src !== data.tab.url) {
+              console.log("Navigating webview to:", data.tab.url);
+              webview.src = data.tab.url;
+            }
+          } else {
+            console.log(data.tab.id);
+            console.log(activeTabId);
+            console.log(activeTabIdSession);
           }
-        } else {
-          console.log(data.tab.id);
-          console.log(activeTabId);
-          console.log(activeTabIdSession);
         }
         break;
 
@@ -784,7 +840,7 @@ export default function BrowserLayout() {
         pausevideo();
         break;
       case "scrolled":
-        if (allowSharedScrolling) {
+        if (allowSharedScrollingRef.current) {
           const activeWebView = webviewRefs.current[data.TabId] as any;
           activeWebView.executeJavaScript(`
         window.scrollTo({
@@ -2531,6 +2587,26 @@ export default function BrowserLayout() {
                       checked={shareScrolling}
                       onCheckedChange={() => {
                         setShareScrolling(!shareScrolling);
+                      }}
+                      className="mt-1"
+                    ></Switch>
+                  </div>
+                  <div className="flex gap-4">
+                    <h1 className="text-white">Allow Screen</h1>
+                    <Switch
+                      checked={allowScreen}
+                      onCheckedChange={() => {
+                        setAllowScreen(!allowScreen);
+                      }}
+                      className="mt-1"
+                    ></Switch>
+                  </div>
+                  <div className="flex gap-4">
+                    <h1 className="text-white">Share Screen</h1>
+                    <Switch
+                      checked={shareScreen}
+                      onCheckedChange={() => {
+                        setShareScreen(!shareScreen);
                       }}
                       className="mt-1"
                     ></Switch>
