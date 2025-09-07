@@ -391,20 +391,41 @@ export default function BrowserLayout() {
     };
   }, []);
 
+  const blockedUrl = (url: string) => {
+    const blockedHostnames = [
+      "chatgpt.com",
+      "chat.openai.com",
+      "gemini.google.com",
+      "claude.ai",
+      "bard.google.com",
+      "poe.com",
+      "character.ai",
+      "huggingface.co",
+    ];
+    const hostname = new URL(url).hostname;
+    return blockedHostnames.some((blocked) => hostname.includes(blocked)); // also checks for subdomains basically maps through some(all) and checks if its included
+  };
+
   // useEffect for sharing title changes, and url changes
   useEffect(() => {
     const handleWebViewEvents = () => {
       const activeWebView = webviewRefs.current[activeTabId] as any;
       if (!activeWebView) return;
+
       let lastUrl = "";
       let count = 0;
-      const handleNavigate = (event: any, id: number) => {
+      const handleNavigate = (event: any, id: number, isInPage = false) => {
+        if (isInPage && blockedUrl(url)) {
+          return;
+        }
+
         let newUrl = event.url;
         count++;
         if (newUrl == lastUrl) return;
         if (count % 2 == 0) {
           lastUrl = event.url;
         }
+
         try {
           const url = new URL(newUrl);
           url.searchParams.delete("zx");
@@ -498,8 +519,12 @@ export default function BrowserLayout() {
           }))
         );
       };
-      const handleNavigateActive = (e: any) => handleNavigate(e, activeTabId);
+      const handleNavigateActive = (e: any) =>
+        handleNavigate(e, activeTabId, false);
+      const handleNavigateInPageActice = (e: any) =>
+        handleNavigate(e, activeTabId, true);
       let splitNavigateHandler: ((e: any) => void) | null = null;
+      let splitNaviagteHandlerInPage: ((e: any) => void) | null = null;
       const splitViewActive = splitViewTabs.find(
         (tab) => tab.baseTabId == activeTabId
       );
@@ -508,14 +533,17 @@ export default function BrowserLayout() {
           webviewRefs.current[splitViewActive.splitViewTabId];
         if (splitViewWebView) {
           splitNavigateHandler = (e: any) =>
-            handleNavigate(e, splitViewActive.splitViewTabId);
+            handleNavigate(e, splitViewActive.splitViewTabId, false);
+          splitNaviagteHandlerInPage = (e: any) =>
+            handleNavigate(e, splitViewActive.splitViewTabId, true);
+
           splitViewWebView.addEventListener(
             "did-navigate",
             splitNavigateHandler
           );
           splitViewWebView.addEventListener(
             "did-navigate-in-page",
-            splitNavigateHandler
+            splitNaviagteHandlerInPage
           );
         }
       }
@@ -523,7 +551,7 @@ export default function BrowserLayout() {
       activeWebView.addEventListener("did-navigate", handleNavigateActive);
       activeWebView.addEventListener(
         "did-navigate-in-page",
-        handleNavigateActive
+        handleNavigateInPageActice
       );
 
       const handleScrollTracking = () => {
@@ -603,7 +631,11 @@ export default function BrowserLayout() {
         const splitViewActive = splitViewTabs.find(
           (tab) => tab.baseTabId == activeTabId
         );
-        if (splitViewActive?.splitViewTabId && splitNavigateHandler) {
+        if (
+          splitViewActive?.splitViewTabId &&
+          splitNavigateHandler &&
+          splitNaviagteHandlerInPage
+        ) {
           const splitViewWebView =
             webviewRefs.current[splitViewActive.splitViewTabId];
           if (splitViewWebView) {
@@ -613,7 +645,7 @@ export default function BrowserLayout() {
             );
             splitViewWebView.removeEventListener(
               "did-navigate-in-page",
-              splitNavigateHandler
+              splitNaviagteHandlerInPage
             );
           }
         }
@@ -624,7 +656,7 @@ export default function BrowserLayout() {
         );
         activeWebView.removeEventListener(
           "did-navigate-in-page",
-          handleNavigateActive
+          handleNavigateInPageActice
         );
       };
     };
