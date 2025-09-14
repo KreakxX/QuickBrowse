@@ -20,6 +20,7 @@ import type {
   tabGroup,
 } from "./types/browser";
 import Sidebar from "./UI/SideBar";
+import { blockedHostnames } from "./types/hostnames";
 
 declare global {
   interface Window {
@@ -61,9 +62,6 @@ declare global {
 }
 
 export default function BrowserLayout() {
-  // INTERFACES
-
-  // USESTATES
   const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
   const [currentUrl, setCurrentUrl] = useState<string>(
     "https://quickbrowse.vercel.app"
@@ -94,7 +92,6 @@ export default function BrowserLayout() {
   const [savedTabs, setSavedTabs] = useState<savedTab[]>([]);
   const [hoveredTab, setHoveredTab] = useState<number | null>(null);
   const [TabGroupOpen, setTabGroupOpen] = useState<boolean>(false);
-
   const [activeTheme, setActiveTheme] = useState<color>({
     name: "dark",
     hex: "#09090b",
@@ -102,12 +99,10 @@ export default function BrowserLayout() {
     secondary2: "#27272a",
     acsent: "#6366f1",
   });
-
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [bookMarkTabs, setBookMarkTabs] = useState<
     { id: number; url: string; favicon: string; timestamp: number }[]
   >([]);
-
   const [oldCurrentTime, setOldCurrentTime] = useState<number>(0);
   const [skipped, setSkipped] = useState<boolean>(false);
   const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
@@ -144,10 +139,8 @@ export default function BrowserLayout() {
   const sessionCodeRef = useRef(sessionCode);
   const allowSharedScrollingRef = useRef(allowSharedScrolling);
   const shareScrollingRef = useRef(shareScrolling);
-
   const [shareScreen, setShareScreen] = useState<boolean>(false);
   const [allowScreen, setAllowScreen] = useState<boolean>(false);
-
   const shareScreenRef = useRef(shareScreen);
   const allowScreenRef = useRef(allowScreen);
   // TAB GROUP
@@ -346,47 +339,6 @@ export default function BrowserLayout() {
   }, []);
 
   const blockedUrl = (url: string) => {
-    const blockedHostnames = [
-      "chatgpt.com",
-      "chat.openai.com",
-      "gemini.google.com",
-      "claude.ai",
-      "bard.google.com",
-      "poe.com",
-      "character.ai",
-      "huggingface.co",
-      "accounts.google.com",
-      "oauth.googleusercontent.com",
-      "googleapis.com",
-      "accounts.youtube.com",
-      "myaccount.google.com",
-      "console.cloud.google.com",
-      "console.developers.google.com",
-      "developers.google.com",
-      "firebase.google.com",
-      "console.firebase.google.com",
-
-      "login.microsoftonline.com",
-      "account.microsoft.com",
-      "login.live.com",
-      "github.com/login",
-      "api.github.com",
-      "facebook.com/login",
-      "graph.facebook.com",
-      "twitter.com/oauth",
-      "api.twitter.com",
-      "linkedin.com/oauth",
-      "api.linkedin.com",
-
-      "drive.google.com",
-      "docs.google.com",
-      "sheets.google.com",
-      "slides.google.com",
-      "mail.google.com",
-      "calendar.google.com",
-      "photos.google.com",
-      "contacts.google.com",
-    ];
     const hostname = new URL(url).hostname;
     return blockedHostnames.some((blocked) => hostname.includes(blocked)); // also checks for subdomains basically maps through some(all) and checks if its included
   };
