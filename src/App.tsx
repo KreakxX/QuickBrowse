@@ -1,4 +1,4 @@
-import { Fragment, use, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -55,6 +55,8 @@ import colors from "./colors";
 import { Switch } from "./components/ui/switch";
 import { Separator } from "./components/ui/separator";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -854,6 +856,20 @@ export default function BrowserLayout() {
       case "skipped_forward":
         skipForward(data.time);
         break;
+      case "leave_sessionMessage":
+        toast("Session updated", {
+          description: data.username + " has left the Session",
+        });
+
+        break;
+      case "joinedMessage":
+        toast("Session updated", {
+          description: data.username + " has joined the Session",
+        });
+        break;
+      case "cantJoinMessage":
+        toast("You cant join the Session its full");
+        break;
       case "skipped_backward":
         skipBackward(data.time);
         break;
@@ -1565,6 +1581,7 @@ export default function BrowserLayout() {
 
   return (
     <div className="h-screen bg-zinc-800   text-white flex flex-col ">
+      <Toaster />
       <div className="flex h-full w-full overflow-hidden justify-between">
         {showSidebar ? (
           <div
@@ -2523,7 +2540,7 @@ export default function BrowserLayout() {
                       setTabGroupOpen(true);
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-9 h-9 "
+                    className="rounded-lg mb-2 ml-2 w-8 h-8 "
                   >
                     <AppWindow></AppWindow>
                   </Button>
@@ -2668,7 +2685,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
+                    className="rounded-lg mb-2 ml-2 w-8 h-8  "
                     onClick={() => {
                       loadBookMarks();
                     }}
@@ -2766,7 +2783,7 @@ export default function BrowserLayout() {
                       loadHistory();
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
+                    className="rounded-lg mb-2 ml-2 w-8 h-8  "
                   >
                     <History></History>
                   </Button>
@@ -2846,7 +2863,7 @@ export default function BrowserLayout() {
                   <DialogTrigger asChild>
                     <Button
                       style={{ backgroundColor: activeTheme?.secondary }}
-                      className="rounded-lg mb-3 ml-2 w-9 h-9  "
+                      className="rounded-lg mb-2 ml-2 w-8 h-8  "
                     >
                       <Youtube size={30}></Youtube>
                     </Button>
@@ -2913,7 +2930,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
+                    className="rounded-lg mb-2 ml-2 w-8 h-8  "
                   >
                     <Palette></Palette>
                   </Button>
@@ -3149,7 +3166,7 @@ export default function BrowserLayout() {
                     <DialogTrigger asChild>
                       <Button
                         style={{ backgroundColor: activeTheme?.secondary }}
-                        className="rounded-lg mb-3 ml-2 w-9 h-9  "
+                        className="rounded-lg mb-3 ml-2 w-8 h-8  "
                       >
                         <MessageCircle></MessageCircle>
                       </Button>
@@ -3384,20 +3401,13 @@ export default function BrowserLayout() {
                       }
                       className="w-full h-full"
                     >
-                      {allTabs.map((tab, index) => {
+                      {allTabs.map((tab) => {
                         const isActiveTab = tab.id === activeTabId;
                         const isSplitViewTab =
                           activeSplitView &&
                           tab.id === activeSplitView.splitViewTabId;
                         const shouldShow = isActiveTab || isSplitViewTab;
-                        let cssOrder = 0;
-                        if (isActiveTab) {
-                          cssOrder = 1;
-                        } else if (isSplitViewTab) {
-                          cssOrder = 2;
-                        } else {
-                          cssOrder = 2;
-                        }
+
                         return (
                           <Fragment key={tab.id}>
                             <ResizablePanel

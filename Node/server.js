@@ -1,3 +1,4 @@
+import { json } from 'stream/consumers';
 import WebSocket, { WebSocketServer } from 'ws';
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -110,50 +111,6 @@ function scrolled (ws,message){
   }
 
   broadcastToSession(sessionCode,scrolledMessage,ws)
-}
-
-function deleteSession(ws,message){
-  const sessionCode = ws.sessionCode;
-  if (!sessionCode || !sessions[sessionCode]) {
-    ws.send(JSON.stringify({
-      type: 'error',
-      message: 'Du bist in keiner Session!'
-    }));
-    return;
-  } 
-
-
-  const deleteMessions = {
-    type: "delete_session",
-    code: sessionCode
-  }
-
-  broadcastToSession(sessionCode,deleteMessions,ws)
-
-  if (sessions[sessionCode] && sessions[sessionCode].clients) {
-    sessions[sessionCode].clients.forEach(client => {
-      if (client.sessionCode === sessionCode) {
-        delete client.sessionCode; 
-      }
-    });
-  }
-  
-  delete sessions[sessionCode];
-
-}
-
-function leaveSessionAsclient(ws,message){
-  const sessionCode = ws.sessionCode;
-  if (!sessionCode || !sessions[sessionCode]) {
-  ws.send(JSON.stringify({
-    type: 'error',
-    message: 'Du bist in keiner Session!'
-  }));
-  return;
-} 
-sessions[sessionCode].clients = sessions[sessionCode].clients.filter((client) => message.username !== client.username); 
-delete ws.sessionCode;
-
 }
 
 function join_info(ws,message){
@@ -382,6 +339,56 @@ function handleCreateSession(ws, message) {
   console.log(`✅ Session ${sessionCode} erstellt von ${username}`);
 }
 
+function deleteSession(ws,message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+  } 
+
+
+  const deleteMessions = {
+    type: "delete_session",
+    code: sessionCode
+  }
+
+  broadcastToSession(sessionCode,deleteMessions,ws)
+
+  if (sessions[sessionCode] && sessions[sessionCode].clients) {
+    sessions[sessionCode].clients.forEach(client => {
+      if (client.sessionCode === sessionCode) {
+        delete client.sessionCode; 
+      }
+    });
+  }
+  
+  delete sessions[sessionCode];
+
+}
+
+function leaveSessionAsclient(ws,message){
+  const sessionCode = ws.sessionCode;
+  const leaveSessionMessage = {
+    type: "leave_sessionMessage",
+    username: message.username
+  }
+  broadcastToSession(sessionCode,leaveSessionMessage,ws)
+
+  if (!sessionCode || !sessions[sessionCode]) {
+  ws.send(JSON.stringify({
+    type: 'error',
+    message: 'Du bist in keiner Session!'
+  }));
+  return;
+} 
+sessions[sessionCode].clients = sessions[sessionCode].clients.filter((client) => message.username !== client.username); 
+delete ws.sessionCode;
+
+
+}
 
 // function for joing a Session
 function handleJoinSession(ws, message) {
@@ -399,7 +406,8 @@ function handleJoinSession(ws, message) {
   }
 
   // else add the client to the clients of the session from the code
-  sessions[sessionCode].clients.push(ws);  
+  if(sessions[sessionCode].clients.length <= 2){
+    sessions[sessionCode].clients.push(ws);  
   ws.sessionCode = sessionCode;    // and make the client username belong ot the session
   ws.username = username;
 
@@ -414,6 +422,19 @@ function handleJoinSession(ws, message) {
     X: sessions[sessionCode].X || 0, 
     Y: sessions[sessionCode].Y || 0
   }));
+
+  const joinedMessage = {
+    type: "joinedMessage",
+    username: username
+  }
+  broadcastToSession(sessionCode,joinedMessage,ws)
+  }
+  else{
+    ws.send(JSON.stringify({
+      type: "cantJoinMessage"
+    }))
+    
+  }
 
   
   console.log(`✅ ${username} ist Session ${sessionCode} beigetreten`);
@@ -559,37 +580,3 @@ function removeSharedTab(ws, message){
   };
   broadcastToSession(sessionCode,browserTab,ws);
 }
-
-// add the listening in the frontend
-
-// Syntax playground to learn faster code Done but learning is important
-
-// basic Syntax to make a WebSocketServer
-// import WebSocket, { WebSocketServer } from 'ws';
-// const wsServer = new WebSocketServer({ port: 8080 });
-
-// // if someone connects execute this 
-
-// wsServer.on('connection', (ws)=>{
-//   // if we get a message from the frontend (send) like create_session we handle and redirect to the specific url
-//   ws.on("message" , (data)=>{
-//     const message = JSON.parse(data.toString());     // we get teh message 
-//     switch (message.type) {   // and the type and than we call the function
-//       case 'create_session':
-//         handleCreateSession(ws, message);
-//         break; 
-
-//       case 'join_session':
-//         handleJoinSession(ws, message);
-//         break;
-
-//       case 'chat_message':
-//         handleChatMessage(ws, message);
-//         break;
-//     }
-//   })
-// })
-
-
-// basically how it works we have a message handler for server and client side and if the case than we do this else we do this
-// Concept on both sides handlers and we send data to handlers and they process them
