@@ -207,6 +207,7 @@ export default function BrowserLayout() {
     },
   ]);
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
+  const [sessionJoined, setSessionJoined] = useState<boolean>(false);
   const [sessionCode, setSessionCode] = useState<string>("");
   const [youtubePopUp, setYoutubePopUp] = useState<boolean>(false);
   const [youtubePopUpId, setYoutubePopUpId] = useState<number | null>(null);
@@ -862,6 +863,7 @@ export default function BrowserLayout() {
         break;
       case "session_joined":
         setSessionCode(data.code);
+        setSessionJoined(true);
         setShared(true);
         setTabs(data.tabs);
 
@@ -943,6 +945,23 @@ export default function BrowserLayout() {
       setShared(false);
       setSessionCode("");
       setSessionCreated(false);
+    }
+
+    if (sessionJoined && shared) {
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        alert("Not connected to server");
+        return;
+      }
+      wsRef.current.send(
+        JSON.stringify({
+          type: "leave_session_client",
+          username: username,
+        })
+      );
+
+      setShared(false);
+      setSessionCode("");
+      setSessionJoined(false);
     }
   };
 
@@ -1891,17 +1910,11 @@ export default function BrowserLayout() {
                       <ContextMenu>
                         <ContextMenuTrigger>
                           <>
-                            {tab.favicon ? (
-                              <img
-                                src={tab.favicon || "/placeholder.svg"}
-                                className="w-6 h-6 rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            ) : (
-                              <div className="w-6 h-6 bg-zinc-500 rounded flex items-center justify-center text-xs"></div>
-                            )}
+                            <img
+                              className="h-6 w-6 "
+                              src={tab?.favicon}
+                              alt=""
+                            />
                           </>
                         </ContextMenuTrigger>
                         <ContextMenuContent>
@@ -2510,7 +2523,7 @@ export default function BrowserLayout() {
                       setTabGroupOpen(true);
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-9 h-9 "
                   >
                     <AppWindow></AppWindow>
                   </Button>
@@ -2557,59 +2570,97 @@ export default function BrowserLayout() {
                 }}
               >
                 <DialogContent
-                  className="max-w-[425px] border-zinc-800"
+                  className="max-w-md border-zinc-800 p-0"
                   style={{ background: activeTheme.hex }}
                 >
-                  <DialogClose asChild>
-                    <Button className="w-8 h-8">
-                      <X></X>
-                    </Button>
-                  </DialogClose>
-                  <DialogHeader>
-                    <DialogTitle className="text-white">
-                      Session Settings
-                    </DialogTitle>
-                  </DialogHeader>
-                  <Separator className="bg-zinc-500" />
-                  <div className="flex gap-4">
-                    <h1 className="text-white">Allow Scrolling</h1>
-                    <Switch
-                      checked={allowSharedScrolling}
-                      onCheckedChange={() => {
-                        setAllowSharedScrolling(!allowSharedScrolling);
-                      }}
-                      className="mt-1"
-                    ></Switch>
-                  </div>
-                  <div className="flex gap-4">
-                    <h1 className="text-white">Share Scrolling</h1>
-                    <Switch
-                      checked={shareScrolling}
-                      onCheckedChange={() => {
-                        setShareScrolling(!shareScrolling);
-                      }}
-                      className="mt-1"
-                    ></Switch>
-                  </div>
-                  <div className="flex gap-4">
-                    <h1 className="text-white">Allow Screen</h1>
-                    <Switch
-                      checked={allowScreen}
-                      onCheckedChange={() => {
-                        setAllowScreen(!allowScreen);
-                      }}
-                      className="mt-1"
-                    ></Switch>
-                  </div>
-                  <div className="flex gap-4">
-                    <h1 className="text-white">Share Screen</h1>
-                    <Switch
-                      checked={shareScreen}
-                      onCheckedChange={() => {
-                        setShareScreen(!shareScreen);
-                      }}
-                      className="mt-1"
-                    ></Switch>
+                  <div className="relative p-6">
+                    <DialogClose asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-4 top-4 h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 rounded-full"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </DialogClose>
+
+                    <DialogHeader className="space-y-3 pr-10">
+                      <DialogTitle className="text-xl font-semibold text-white">
+                        Session Settings
+                      </DialogTitle>
+                    </DialogHeader>
+
+                    <Separator className="bg-white/20 my-6" />
+
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-white">
+                            Allow Scrolling
+                          </h3>
+                          <p className="text-xs text-white/70">
+                            Enable scroll synchronization
+                          </p>
+                        </div>
+                        <Switch
+                          checked={allowSharedScrolling}
+                          onCheckedChange={() =>
+                            setAllowSharedScrolling(!allowSharedScrolling)
+                          }
+                          className="data-[state=checked]:bg-white/20"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-white">
+                            Share Scrolling
+                          </h3>
+                          <p className="text-xs text-white/70">
+                            Broadcast your scroll position
+                          </p>
+                        </div>
+                        <Switch
+                          checked={shareScrolling}
+                          onCheckedChange={() =>
+                            setShareScrolling(!shareScrolling)
+                          }
+                          className="data-[state=checked]:bg-white/20"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-white">
+                            Allow Screen
+                          </h3>
+                          <p className="text-xs text-white/70">
+                            Enable screen sharing features
+                          </p>
+                        </div>
+                        <Switch
+                          checked={allowScreen}
+                          onCheckedChange={() => setAllowScreen(!allowScreen)}
+                          className="data-[state=checked]:bg-white/20"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-medium text-white">
+                            Share Screen
+                          </h3>
+                          <p className="text-xs text-white/70">
+                            Broadcast your screen to others
+                          </p>
+                        </div>
+                        <Switch
+                          checked={shareScreen}
+                          onCheckedChange={() => setShareScreen(!shareScreen)}
+                          className="data-[state=checked]:bg-white/20"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -2617,7 +2668,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
                     onClick={() => {
                       loadBookMarks();
                     }}
@@ -2715,7 +2766,7 @@ export default function BrowserLayout() {
                       loadHistory();
                     }}
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-8 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
                   >
                     <History></History>
                   </Button>
@@ -2795,7 +2846,7 @@ export default function BrowserLayout() {
                   <DialogTrigger asChild>
                     <Button
                       style={{ backgroundColor: activeTheme?.secondary }}
-                      className="rounded-lg mb-3 ml-2 w-8 h-10 "
+                      className="rounded-lg mb-3 ml-2 w-9 h-9  "
                     >
                       <Youtube size={30}></Youtube>
                     </Button>
@@ -2862,7 +2913,7 @@ export default function BrowserLayout() {
                 <DialogTrigger asChild>
                   <Button
                     style={{ backgroundColor: activeTheme?.secondary }}
-                    className="rounded-lg mb-3 ml-2 w-9 h-10 "
+                    className="rounded-lg mb-3 ml-2 w-9 h-9  "
                   >
                     <Palette></Palette>
                   </Button>
@@ -3098,7 +3149,7 @@ export default function BrowserLayout() {
                     <DialogTrigger asChild>
                       <Button
                         style={{ backgroundColor: activeTheme?.secondary }}
-                        className="rounded-lg mb-3 ml-2 w-8 h-10 "
+                        className="rounded-lg mb-3 ml-2 w-9 h-9  "
                       >
                         <MessageCircle></MessageCircle>
                       </Button>

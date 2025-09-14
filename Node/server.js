@@ -72,6 +72,9 @@ wss.on('connection', (ws) => {
       case 'scrolled':
         scrolled(ws,message)
         break;
+      case 'leave_session_client':
+        leaveSessionAsclient(ws,message);
+        break;
     }
   });
 
@@ -136,6 +139,20 @@ function deleteSession(ws,message){
   }
   
   delete sessions[sessionCode];
+
+}
+
+function leaveSessionAsclient(ws,message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+  ws.send(JSON.stringify({
+    type: 'error',
+    message: 'Du bist in keiner Session!'
+  }));
+  return;
+} 
+sessions[sessionCode].clients = sessions[sessionCode].clients.filter((client) => message.username !== client.username); 
+delete ws.sessionCode;
 
 }
 
