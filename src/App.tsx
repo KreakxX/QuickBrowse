@@ -208,6 +208,7 @@ export default function BrowserLayout() {
       favIcon: "https://quickbrowse.vercel.app/favicon.ico",
     },
   ]);
+  const [sessionUsers, setSessionUsers] = useState<string[]>([]);
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   const [sessionJoined, setSessionJoined] = useState<boolean>(false);
   const [sessionCode, setSessionCode] = useState<string>("");
@@ -772,6 +773,7 @@ export default function BrowserLayout() {
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
       case "session_created":
+        setSessionUsers((prev) => [...prev, username]);
         setSessionCode(data.code);
         setSessionCreated(true);
         setShared(true);
@@ -857,15 +859,14 @@ export default function BrowserLayout() {
         skipForward(data.time);
         break;
       case "leave_sessionMessage":
-        toast("Session updated", {
-          description: data.username + " has left the Session",
-        });
-
+        toast(data.username + " has left the Session");
+        setSessionUsers((prev) =>
+          prev.filter((user) => user !== data.username)
+        );
         break;
       case "joinedMessage":
-        toast("Session updated", {
-          description: data.username + " has joined the Session",
-        });
+        toast(data.username + " has joined the Session");
+        setSessionUsers((prev) => [...prev, data.username]);
         break;
       case "cantJoinMessage":
         toast("You cant join the Session its full");
@@ -1810,6 +1811,25 @@ export default function BrowserLayout() {
                               Create
                             </TabsTrigger>
 
+                            {sessionCreated ? (
+                              <TabsTrigger
+                                style={
+                                  {
+                                    "--tab-bg": activeTheme?.secondary,
+                                    "--tab-bg-active": activeTheme?.hex,
+                                  } as React.CSSProperties
+                                }
+                                className="
+      text-white
+      bg-[var(--tab-bg)]
+      data-[state=active]:bg-[var(--tab-bg-active)]
+    "
+                                value="users"
+                              >
+                                Users
+                              </TabsTrigger>
+                            ) : null}
+
                             {shared ? (
                               <TabsTrigger
                                 style={
@@ -1860,6 +1880,32 @@ export default function BrowserLayout() {
                             </Button>
                           </TabsContent>
 
+                          {sessionCreated ? (
+                            <TabsContent value="users">
+                              <h1 className="text-white font-bold mb-3 mt-5">
+                                Users in current Session
+                              </h1>
+                              <div className="flex ml-5 mt-4 ">
+                                {sessionUsers.map((user) => (
+                                  <div className="relative">
+                                    <Avatar>
+                                      <AvatarFallback
+                                        style={{
+                                          backgroundColor:
+                                            activeTheme?.secondary,
+                                        }}
+                                        className="text-white"
+                                      >
+                                        {user?.slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-zinc-900 rounded-full"></div>
+                                  </div>
+                                ))}
+                              </div>
+                            </TabsContent>
+                          ) : null}
+
                           <TabsContent value="create">
                             <Input
                               value={sessionCode}
@@ -1907,9 +1953,8 @@ export default function BrowserLayout() {
                 </div>
               </div>
             </div>
-
             <div className="px-3 mb-4 w-full">
-              <div className="mt-6">
+              <div className="mt-5">
                 <div
                   className="grid  gap-2 w-full"
                   style={{
