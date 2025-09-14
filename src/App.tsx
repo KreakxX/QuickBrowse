@@ -57,6 +57,14 @@ import { Separator } from "./components/ui/separator";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import type {
+  ChatMessage,
+  color,
+  savedTab,
+  SplitView,
+  tab,
+  tabGroup,
+} from "./types/browser";
 
 declare global {
   interface Window {
@@ -99,42 +107,6 @@ declare global {
 
 export default function BrowserLayout() {
   // INTERFACES
-
-  interface ChatMessage {
-    username?: string;
-    message?: string;
-  }
-  interface SplitView {
-    baseTabId: number;
-    splitViewTabId: number;
-    layout: string;
-  }
-  interface color {
-    name: string;
-    hex: string;
-    secondary: string;
-    secondary2: string;
-    acsent: string;
-  }
-
-  interface savedTab {
-    id: number;
-    url: string;
-    favicon?: string;
-  }
-
-  interface tabGroup {
-    id: number;
-    title: string;
-    tabs: tab[];
-  }
-
-  interface tab {
-    id: number;
-    url: string;
-    title?: string;
-    favIcon?: string;
-  }
 
   // USESTATES
   const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
