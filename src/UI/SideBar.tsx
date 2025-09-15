@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,7 +54,9 @@ import {
   LayoutPanelLeft,
   LayoutPanelTop,
   PictureInPicture,
+  Clipboard,
 } from "lucide-react";
+import { useSonner } from "sonner";
 
 interface SideBarProps {
   showSidebar: boolean;
@@ -121,6 +123,8 @@ interface SideBarProps {
   setAllowScreen: (allow: boolean) => void;
   shareScreen: boolean;
   setShareScreen: (share: boolean) => void;
+  showStickyNote: boolean;
+  setShowStickyNote: (showStickyNote: boolean) => void;
   loadBookMarks: () => void;
   bookMarkTabs: {
     id: number;
@@ -152,6 +156,7 @@ interface SideBarProps {
   setMessageInput: (message: string) => void;
   sendChatMessage: () => void;
   extractYouTubeVideoID: (url: string) => string | null;
+  addTodoToStickyNote: (todo: string) => void;
 }
 
 export default function Sidebar(props: SideBarProps) {
@@ -243,7 +248,12 @@ export default function Sidebar(props: SideBarProps) {
     extractYouTubeVideoID,
     removeBookMark,
     deleteHistory,
+    addTodoToStickyNote,
+    showStickyNote,
+    setShowStickyNote,
   } = props;
+
+  const [todoInput, setTodoInput] = useState<string>("");
 
   return (
     <>
@@ -1212,6 +1222,64 @@ export default function Sidebar(props: SideBarProps) {
               ))}
             </div>
           ) : null}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                style={{ backgroundColor: activeTheme?.secondary }}
+                className="rounded-lg mb-2 ml-2 w-8 h-8 "
+              >
+                <Clipboard></Clipboard>
+              </Button>
+            </DialogTrigger>
+            <DialogContent
+              className="max-w-[425px] border-zinc-800"
+              style={{ background: activeTheme.hex }}
+            >
+              <DialogClose asChild>
+                <Button className="w-8 h-8">
+                  <X></X>
+                </Button>
+              </DialogClose>
+              <DialogHeader>
+                <DialogTitle className="text-white">Todo</DialogTitle>
+                <DialogDescription>
+                  Create new Todos and view them with the Sticky Note
+                </DialogDescription>
+              </DialogHeader>
+              <Input
+                onChange={(e) => {
+                  setTodoInput(e.target.value);
+                }}
+                className="text-white border-zinc-800"
+                placeholder="Todo"
+              ></Input>
+
+              <Button
+                onClick={() => {
+                  addTodoToStickyNote(todoInput);
+                }}
+                className="bg-zinc-800"
+              >
+                Create new Todo
+              </Button>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium text-white">Show Todos</h3>
+                  <p className="text-xs text-white/70">
+                    Showcase your Todos with a Sticky Note in the top right
+                    corner
+                  </p>
+                </div>
+                <Switch
+                  checked={showStickyNote}
+                  onCheckedChange={() => setShowStickyNote(!showStickyNote)}
+                  className="data-[state=checked]:bg-white/20"
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <div className="flex justify-between w-[20%]">
             <Dialog
               open={TabGroupOpen}

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, MousePointer2 } from "lucide-react";
+import { GripVertical, MousePointer2, X } from "lucide-react";
 import React from "react";
 
 import {
@@ -21,6 +21,7 @@ import type {
 } from "./types/browser";
 import Sidebar from "./UI/SideBar";
 import { blockedHostnames } from "./types/hostnames";
+import { Button } from "./components/ui/button";
 
 declare global {
   interface Window {
@@ -121,6 +122,7 @@ export default function BrowserLayout() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [openSettings, setOpenSettings] = useState<boolean>(false);
   const [shareScrolling, setShareScrolling] = useState<boolean>(false);
+
   const [allowSharedScrolling, setAllowSharedScrolling] =
     useState<boolean>(false);
   const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
@@ -133,6 +135,8 @@ export default function BrowserLayout() {
       favIcon: "https://quickbrowse.vercel.app/favicon.ico",
     },
   ]);
+  const [showStickyNote, setShowStickyNote] = useState<boolean>(true);
+  const [todos, setTodos] = useState<string[]>([]);
   const [sessionUsers, setSessionUsers] = useState<string[]>([]);
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
   const [sessionJoined, setSessionJoined] = useState<boolean>(false);
@@ -1383,6 +1387,15 @@ export default function BrowserLayout() {
     window.electronAPI?.deleteSavedTab(id);
   };
 
+  const addTodoToStickyNote = (todo: string) => {
+    setTodos((prev) => [...prev, todo]);
+  };
+
+  const removeTodoFromStickyNote = (todo: string) => {
+    const filtered = todos.filter((Todo) => Todo !== todo);
+    setTodos(filtered);
+  };
+
   // useEffect for loading saved pinned Tabs
   useEffect(() => {
     const findSavedTabs = async () => {
@@ -1573,6 +1586,9 @@ export default function BrowserLayout() {
           extractYouTubeVideoID={extractYouTubeVideoID}
           removeBookMark={removeBookMark}
           deleteHistory={deleteHistory}
+          addTodoToStickyNote={addTodoToStickyNote}
+          showStickyNote={showStickyNote}
+          setShowStickyNote={setShowStickyNote}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}
@@ -1604,7 +1620,41 @@ export default function BrowserLayout() {
                 }}
               />
             ) : null}
-
+            {showStickyNote ? (
+              <div className="absolute top-4 right-10 w-64 bg-zinc-900 shadow-lg transform rotate-1">
+                <div className="bg-zinc-800 h-6 w-full"></div>
+                <div className="p-4 ">
+                  <h3 className="font-semibold text-gray-200 mb-3 text-sm">
+                    Todo List
+                  </h3>
+                  <ul className="space-y-2">
+                    {todos.map((todo, index) => (
+                      <li
+                        key={index}
+                        className="text-xs text-gray-700 flex items-start"
+                      >
+                        <span className="w-2 h-2 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                        <span className=" text-white text-sm ">{todo}</span>
+                        <Button
+                          onClick={() => {
+                            removeTodoFromStickyNote(todo);
+                          }}
+                          className="w-2 h-2 mt-0.5 ml-2"
+                        >
+                          <X></X>
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div
+                  onClick={() => {
+                    setShowStickyNote(false);
+                  }}
+                  className="absolute top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-400 rounded-full shadow-sm"
+                ></div>
+              </div>
+            ) : null}
             {!watchTogether
               ? (() => {
                   const activeSplitView = splitViewTabs.find(
