@@ -3,9 +3,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Menu } from "electron";
 import { ipcMain } from 'electron';
-import { saveHistory, loadHistory } from './history.js';
+import { saveHistory, loadHistory, deleteHistory } from './history.js';
 import fetch from 'node-fetch';
-import { addBookmark, loadBookmarks } from './Bookmarks.js';
+import { addBookmark, loadBookmarks, removeBookMark } from './Bookmarks.js';
 import { addSavedTab, loadAllSavedTabs,deleteSavedTab } from './savedTabs.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +37,8 @@ function createWindow() {
 
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadURL('http://localhost:5173');
+  win.loadURL("http://localhost:5173");
+
 }
 
 let PopUpWindow = null;
@@ -104,10 +105,6 @@ ipcMain.handle('get-cookies', async (_event, partition) => {
 
 
 
-
-
-
-
 ipcMain.handle('history:save',(_event, url, favicon)=>{
   saveHistory(url,favicon);
 })
@@ -116,12 +113,20 @@ ipcMain.handle('history:load',(_event)=>{
   return loadHistory();
 })
 
-ipcMain.handle('bookmarks:save', (_event, url,favicon)=>{
-  addBookmark(url,favicon);
+ipcMain.handle("history:delete", (_event) => {
+  return deleteHistory();
+})
+
+ipcMain.handle('bookmarks:save', (_event, url,favicon,id)=>{
+  addBookmark(url,favicon,id);
 })
 
 ipcMain.handle('bookmarks:load', (_event)=>{
   return loadBookmarks();
+})
+
+ipcMain.handle('bookmarks:delete', (_event,id) => {
+  return removeBookMark(id);
 })
 
 ipcMain.handle('savedTabs:add', (_event, url, favicon, id) => {

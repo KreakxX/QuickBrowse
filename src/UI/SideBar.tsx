@@ -129,8 +129,10 @@ interface SideBarProps {
     timestamp: number;
   }[];
   saveNewBookmark: (tabId: number) => void;
+  removeBookMark: (id: number) => void;
   saveNewLongTermTab: (tabId: number) => void;
   loadHistory: () => void;
+  deleteHistory: () => void;
   history: { id: number; url: string; favicon: string; timestamp: number }[];
   watchTogether: boolean;
   setWatchTogether: (watch: boolean) => void;
@@ -239,6 +241,8 @@ export default function Sidebar(props: SideBarProps) {
     setMessageInput,
     sendChatMessage,
     extractYouTubeVideoID,
+    removeBookMark,
+    deleteHistory,
   } = props;
 
   return (
@@ -1403,7 +1407,6 @@ export default function Sidebar(props: SideBarProps) {
                             className="w-full h-auto p-4 justify-start   rounded-lg"
                           >
                             <div className="flex items-center gap-3 w-full min-w-0">
-                              {/* Favicon */}
                               <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
                                 {bookmark.favicon ? (
                                   <img
@@ -1420,7 +1423,6 @@ export default function Sidebar(props: SideBarProps) {
                                 ) : null}
                               </div>
 
-                              {/* Content */}
                               <div className="flex-1 min-w-0 text-left">
                                 <div className="font-medium text-white truncate">
                                   {serviceName}
@@ -1430,9 +1432,16 @@ export default function Sidebar(props: SideBarProps) {
                                 </div>
                               </div>
 
-                              {/* External link icon */}
                               <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0" />
                             </div>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeBookMark(bookmark.id);
+                              }}
+                            >
+                              <X className="text-gray-400"></X>
+                            </Button>
                           </Button>
                         </div>
                       );
@@ -1482,7 +1491,15 @@ export default function Sidebar(props: SideBarProps) {
                     View your search history
                   </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[600px] max-w-[400px] ">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteHistory();
+                  }}
+                >
+                  Delete Search History
+                </Button>
+                <ScrollArea className="max-h-[600px] max-w-[500px] ">
                   {history.map((history, index) => {
                     const url = new URL(history.url);
                     const domain = url.hostname.replace("www.", "");

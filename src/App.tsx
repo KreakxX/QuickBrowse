@@ -36,7 +36,8 @@ declare global {
           timestamp: number;
         }>
       >;
-      addNewBookmark: (url: string, favicon: string) => void;
+      historyDelete: () => void;
+      addNewBookmark: (url: string, favicon: string, id: number) => void;
       loadAllBookmarks: () => Promise<
         Array<{
           id: number;
@@ -45,6 +46,7 @@ declare global {
           timestamp: number;
         }>
       >;
+      removeBookMark: (id: number) => void;
       addNewSavedtab: (url: string, favicon: string, id: number) => void;
       loadSavedTab: () => Promise<
         Array<{
@@ -108,6 +110,7 @@ export default function BrowserLayout() {
   const [skipForwardbool, setSkipForwardsbool] = useState<boolean>(false);
   const [skipBackwardsbool, setSkipBackwardsbool] = useState<boolean>(false);
   const [savedTabId, setSavedTabId] = useState<number>(0);
+  const [bookMarkId, setBookMarkId] = useState<number>(0);
   const activeTabIdRef = useRef(activeTabId);
   const watchTogetherUrlRef = useRef(watchTogetherURL);
   const currentTimeRef = useRef(currentTime);
@@ -1327,14 +1330,30 @@ export default function BrowserLayout() {
     setHistory(sortedHistory);
   };
 
+  const deleteHistory = () => {
+    window.electronAPI?.historyDelete();
+    setHistory([]);
+  };
+
   // method for saving a new Bookmark
   const saveNewBookmark = (id: number) => {
     const tab = tabs.find((tab) => tab.id == id);
     if (!tab) return;
     window.electronAPI?.addNewBookmark(
       tab.url,
-      new URL(tab.url).origin + "/favicon.ico"
+      new URL(tab.url).origin + "/favicon.ico",
+      bookMarkId
     );
+
+    setBookMarkId(bookMarkId + 1);
+  };
+
+  const removeBookMark = (id: number) => {
+    const filteredBookmarks = bookMarkTabs.filter(
+      (bookmark) => bookmark.id !== id
+    );
+    setBookMarkTabs(filteredBookmarks);
+    window.electronAPI?.removeBookMark(id);
   };
 
   // method for saving a new pinned Tab
@@ -1552,6 +1571,8 @@ export default function BrowserLayout() {
           setMessageInput={setMessageInput}
           sendChatMessage={sendChatMessage}
           extractYouTubeVideoID={extractYouTubeVideoID}
+          removeBookMark={removeBookMark}
+          deleteHistory={deleteHistory}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}

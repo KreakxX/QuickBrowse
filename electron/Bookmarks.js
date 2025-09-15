@@ -7,7 +7,7 @@ const db = new Database(dbPath);
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS bookmarks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY,
     url TEXT NOT NULL,
     favicon TEXT,
     timestamp INTEGER
@@ -15,11 +15,16 @@ db.prepare(`
 `).run();
 
 
-export function addBookmark(url, favicon = null) {
+export function addBookmark(url, favicon = null,id) {
   db.prepare(`
-    INSERT INTO bookmarks (url, favicon, timestamp)
-    VALUES (?, ?, ?)
-  `).run(url, favicon, Date.now());
+    INSERT INTO bookmarks (id,url, favicon, timestamp)
+    VALUES (?,?, ?, ?)
+  `).run(id,url, favicon, Date.now());
+}
+
+export function removeBookMark(id){
+ const dbStatement =  db.prepare(`DELETE FROM bookmarks where id = ? `);
+  dbStatement.run(id)
 }
 
 export function loadBookmarks(){

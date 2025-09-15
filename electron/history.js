@@ -25,3 +25,8 @@ export function saveHistory(url, favicon = null) {
 export function loadHistory(){
  return db.prepare(`SELECT * FROM history`).all();
 }
+
+export function deleteHistory(){
+  const dbStatement =  db.prepare(`DELETE FROM history`);
+  dbStatement.run()
+}
