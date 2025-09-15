@@ -1257,6 +1257,7 @@ export default function Sidebar(props: SideBarProps) {
               <Button
                 onClick={() => {
                   addTodoToStickyNote(todoInput);
+                  setTodoInput("");
                 }}
                 className="bg-zinc-800"
               >
@@ -1475,7 +1476,7 @@ export default function Sidebar(props: SideBarProps) {
                             className="w-full h-auto p-4 justify-start   rounded-lg"
                           >
                             <div className="flex items-center gap-3 w-full min-w-0">
-                              <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+                              <div className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden ">
                                 {bookmark.favicon ? (
                                   <img
                                     src={bookmark.favicon || "/placeholder.svg"}
@@ -1495,7 +1496,7 @@ export default function Sidebar(props: SideBarProps) {
                                 <div className="font-medium text-white truncate">
                                   {serviceName}
                                 </div>
-                                <div className="text-xs text-gray-400 dark:text-gray-400 truncate">
+                                <div className="text-xs text-gray-400 dark:text-gray-400 truncate max-w-[300px]">
                                   {bookmark.url}
                                 </div>
                               </div>

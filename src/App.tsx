@@ -1621,8 +1621,8 @@ export default function BrowserLayout() {
               />
             ) : null}
             {showStickyNote ? (
-              <div className="absolute top-4 right-10 w-64 bg-zinc-900 shadow-lg transform rotate-1">
-                <div className="bg-zinc-800 h-6 w-full"></div>
+              <div className="absolute top-4 right-10 w-64 bg-zinc-900 shadow-lg transform rotate-1 rounded-lg">
+                <div className="bg-zinc-800 h-6 w-full rounded-t-lg "></div>
                 <div className="p-4 ">
                   <h3 className="font-semibold text-gray-200 mb-3 text-sm">
                     Todo List
