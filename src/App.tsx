@@ -150,6 +150,9 @@ export default function BrowserLayout() {
   const [allowScreen, setAllowScreen] = useState<boolean>(false);
   const shareScreenRef = useRef(shareScreen);
   const allowScreenRef = useRef(allowScreen);
+  const shareCursorRef = useRef(shareCursor);
+  const [allowCursor, setAllowCursor] = useState<boolean>(false);
+  const allowCursorRef = useRef(allowCursor);
   // TAB GROUP
 
   const addOrRemoveYoutubePopUp = async (
@@ -315,6 +318,14 @@ export default function BrowserLayout() {
     shareScreenRef.current = shareScreen;
   }, [shareScreen]);
 
+  useEffect(() => {
+    shareCursorRef.current = shareCursor;
+  }, [shareCursor]);
+
+  useEffect(() => {
+    allowCursorRef.current = allowCursor;
+  }, [allowCursor]);
+
   // UseEffect for handling connections with the websocket
   useEffect(() => {
     const connectWebSocket = () => {
@@ -322,7 +333,6 @@ export default function BrowserLayout() {
         // connect to the websockket and update the ref
         const ws = new WebSocket("ws://localhost:8080");
         wsRef.current = ws;
-        getMouseMovement();
 
         ws.onmessage = (event) => {
           const data = JSON.parse(event.data);
@@ -498,6 +508,49 @@ export default function BrowserLayout() {
         handleNavigateInPageActice
       );
 
+      const handleMouseTracking = () => {
+        setTimeout(() => {
+          activeWebView
+            .executeJavaScript(
+              `
+        try {
+        
+          if (typeof window === 'undefined' || typeof document === 'undefined') {
+            throw new Error('Window or document not available');
+          }
+          
+          const throttle = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(() => func.apply(null, args), delay);
+            };
+          };
+
+          const mouseHandler = throttle((event) => {
+            const mouseData = {
+              mouseX: event.clientX ,
+              mouseY: event.clientY,
+              pageX: event.pageX,
+              pageY: event.pageY
+            };
+            
+            console.log('MOUSE_DATA:', JSON.stringify(mouseData));
+          }, 10);
+
+          window.addEventListener('mousemove', mouseHandler, { passive: true });
+          document.addEventListener('mousemove', mouseHandler, { passive: true });
+          
+        } catch (error) {
+          console.error('Error in scroll tracking:', error.message);
+        }
+      `
+            )
+            .catch((err: any) =>
+              console.error("Failed to inject scroll tracking:", err)
+            );
+        }, 1000);
+      };
       const handleScrollTracking = () => {
         setTimeout(() => {
           activeWebView
@@ -545,6 +598,9 @@ export default function BrowserLayout() {
       activeWebView.addEventListener("did-finish-load", handleScrollTracking);
       activeWebView.addEventListener("dom-ready", handleScrollTracking);
 
+      activeWebView.addEventListener("did-finish-load", handleMouseTracking);
+      activeWebView.addEventListener("dom-ready", handleMouseTracking);
+
       const handleConsoleMessage = (e: any) => {
         if (e.message.includes("SCROLL_DATA:")) {
           const scrollData = JSON.parse(e.message.replace("SCROLL_DATA:", ""));
@@ -564,8 +620,26 @@ export default function BrowserLayout() {
               })
             );
           }
+        } else if (e.message.includes("MOUSE_DATA:")) {
+          const MOUSE_DATA = JSON.parse(e.message.replace("MOUSE_DATA:", ""));
 
-          // websocket logic
+          if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            alert("Not connected to server");
+            return;
+          }
+          console.log("Mouse Data", MOUSE_DATA);
+
+          if (shareCursorRef.current) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "mouse_move",
+                data: {
+                  x: MOUSE_DATA.mouseX,
+                  y: MOUSE_DATA.mouseY,
+                },
+              })
+            );
+          }
         }
       };
 
@@ -610,50 +684,6 @@ export default function BrowserLayout() {
   }, [activeTabId, activeTabGroup, splitViewTabs, shared]);
 
   // Method for sharing Mouse movement
-  const getMouseMovement = () => {
-    let lastSent = 0;
-    const THROTTLE_MS = 35;
-
-    document.addEventListener("mousemove", (e) => {
-      const now = Date.now();
-
-      if (now - lastSent < THROTTLE_MS) {
-        return;
-      }
-      lastSent = now;
-
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        return;
-      }
-
-      const webviewContainer = document.querySelector(
-        ".flex-1.bg-zinc-900.relative"
-      );
-      if (webviewContainer) {
-        const rect = webviewContainer.getBoundingClientRect();
-
-        const relativeX = e.clientX - rect.left;
-        const relativeY = e.clientY - rect.top;
-
-        if (
-          relativeX >= 0 &&
-          relativeY >= 0 &&
-          relativeX <= rect.width &&
-          relativeY <= rect.height
-        ) {
-          wsRef.current.send(
-            JSON.stringify({
-              type: "mouse_move",
-              data: {
-                x: relativeX,
-                y: relativeY,
-              },
-            })
-          );
-        }
-      }
-    });
-  };
 
   // method for handling messages and updating the client via websockets
   const handleWebSocketMessage = (data: any) => {
@@ -665,8 +695,10 @@ export default function BrowserLayout() {
         setShared(true);
         break;
       case "mouse_update":
-        setXSession(data.x);
-        setYSession(data.y);
+        if (allowCursorRef.current) {
+          setXSession(data.x);
+          setYSession(data.y);
+        }
         break;
       case "url_changed":
         if (allowScreenRef.current) {
@@ -1589,6 +1621,8 @@ export default function BrowserLayout() {
           addTodoToStickyNote={addTodoToStickyNote}
           showStickyNote={showStickyNote}
           setShowStickyNote={setShowStickyNote}
+          allowShareCursor={allowCursor}
+          setAllowShareCursor={setAllowCursor}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}
@@ -1624,7 +1658,7 @@ export default function BrowserLayout() {
               <div className="absolute top-4 right-10 w-64 bg-zinc-900 shadow-lg transform rotate-1 rounded-lg">
                 <div className="bg-zinc-800 h-6 w-full rounded-t-lg "></div>
                 <div className="p-4 ">
-                  <h3 className="font-semibold text-gray-200 mb-3 text-sm">
+                  <h3 className="font-semibold text-gray-200 mb-3 text- sm">
                     Todo List
                   </h3>
                   <ul className="space-y-2">
@@ -1698,8 +1732,7 @@ export default function BrowserLayout() {
                                 partition="persist:QuickBrowse"
                                 allowpopups="true"
                                 style={{
-                                  pointerEvents:
-                                    shareCursor || isResizing ? "none" : "auto",
+                                  pointerEvents: isResizing ? "none" : "auto",
                                 }}
                                 webpreferences="contextIsolation,sandbox"
                               />
