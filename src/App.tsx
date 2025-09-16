@@ -135,7 +135,7 @@ export default function BrowserLayout() {
       favIcon: "https://quickbrowse.vercel.app/favicon.ico",
     },
   ]);
-  const [showStickyNote, setShowStickyNote] = useState<boolean>(true);
+  const [showStickyNote, setShowStickyNote] = useState<boolean>(false);
   const [todos, setTodos] = useState<string[]>([]);
   const [sessionUsers, setSessionUsers] = useState<string[]>([]);
   const [sessionCreated, setSessionCreated] = useState<boolean>(false);
@@ -823,9 +823,6 @@ export default function BrowserLayout() {
           return;
         }
 
-        console.log(watchTogetherUrlRef.current);
-        console.log(currentTimeRef.current);
-
         wsRef.current.send(
           JSON.stringify({
             type: "join_info",
@@ -842,7 +839,7 @@ export default function BrowserLayout() {
           setWatchTogetherURL(data.url);
           setTimeout(() => {
             skipForward(data.time);
-          }, 2000);
+          }, 250);
         }
 
         break;
@@ -989,7 +986,7 @@ export default function BrowserLayout() {
             "https://www.youtube.com"
           );
         }
-      }, 500);
+      }, 250);
       return () => clearInterval(interval);
     }
   }, [shared]);

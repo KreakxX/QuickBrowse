@@ -56,7 +56,6 @@ import {
   PictureInPicture,
   Clipboard,
 } from "lucide-react";
-import { useSonner } from "sonner";
 
 interface SideBarProps {
   showSidebar: boolean;
