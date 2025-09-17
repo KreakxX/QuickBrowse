@@ -1,5 +1,12 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, MousePointer2, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
+  MousePointer2,
+  RefreshCcw,
+  X,
+} from "lucide-react";
 import React from "react";
 
 import {
@@ -1245,16 +1252,52 @@ export default function BrowserLayout() {
     activeWebview?.goBack();
   };
 
+  const navigateBackSplitview = () => {
+    const activeSplitView = splitViewTabs.find(
+      (tab) => tab.baseTabId == activeTabId
+    );
+    if (activeSplitView) {
+      const splitViewWebView = webviewRefs.current[
+        activeSplitView?.splitViewTabId
+      ] as any;
+      splitViewWebView?.goBack();
+    }
+  };
+
   // method for navigating forward
   const navigateForward = () => {
     const activeWebview = webviewRefs.current[activeTabId] as any;
     activeWebview?.goForward();
   };
 
+  const navigateForwardSplitView = () => {
+    const activeSplitView = splitViewTabs.find(
+      (tab) => tab.baseTabId == activeTabId
+    );
+    if (activeSplitView) {
+      const splitViewWebView = webviewRefs.current[
+        activeSplitView?.splitViewTabId
+      ] as any;
+      splitViewWebView?.goForward();
+    }
+  };
+
   // method for refreshing webpage
   const refresh = () => {
     const activeWebview = webviewRefs.current[activeTabId] as any;
     activeWebview?.reload();
+  };
+
+  const refreshSplitView = () => {
+    const activeSplitView = splitViewTabs.find(
+      (tab) => tab.baseTabId == activeTabId
+    );
+    if (activeSplitView) {
+      const splitViewWebView = webviewRefs.current[
+        activeSplitView?.splitViewTabId
+      ] as any;
+      splitViewWebView?.reload();
+    }
   };
 
   // method for switching to tab
@@ -1710,57 +1753,82 @@ export default function BrowserLayout() {
                   const allTabs = getAllTabs();
 
                   return (
-                    <ResizablePanelGroup
-                      direction={
-                        activeSplitView &&
-                        (activeSplitView.layout === "horizontal" ||
-                          activeSplitView.layout === "vertical")
-                          ? activeSplitView.layout
-                          : "horizontal"
-                      }
-                      className="w-full h-full"
-                    >
-                      {allTabs.map((tab) => {
-                        const isActiveTab = tab.id === activeTabId;
-                        const isSplitViewTab =
+                    <div className="w-full h-full flex flex-col">
+                      {activeSplitView && (
+                        <div className="flex items-center gap-2 p-2 bg-zinc-950 border-b border-none">
+                          <Button
+                            className="bg-zinc-950 text-gray-400"
+                            onClick={navigateBackSplitview}
+                          >
+                            <ChevronLeft></ChevronLeft>
+                          </Button>
+                          <Button
+                            className="bg-zinc-950 text-gray-400"
+                            onClick={navigateForwardSplitView}
+                          >
+                            <ChevronRight></ChevronRight>
+                          </Button>
+                          <Button
+                            className="bg-zinc-950 text-gray-400"
+                            onClick={refreshSplitView}
+                          >
+                            <RefreshCcw></RefreshCcw>
+                          </Button>
+                        </div>
+                      )}
+
+                      <ResizablePanelGroup
+                        direction={
                           activeSplitView &&
-                          tab.id === activeSplitView.splitViewTabId;
-                        const shouldShow = isActiveTab || isSplitViewTab;
+                          (activeSplitView.layout === "horizontal" ||
+                            activeSplitView.layout === "vertical")
+                            ? activeSplitView.layout
+                            : "horizontal"
+                        }
+                        className="w-full flex-1"
+                      >
+                        {allTabs.map((tab) => {
+                          const isActiveTab = tab.id === activeTabId;
+                          const isSplitViewTab =
+                            activeSplitView &&
+                            tab.id === activeSplitView.splitViewTabId;
+                          const shouldShow = isActiveTab || isSplitViewTab;
 
-                        return (
-                          <Fragment key={tab.id}>
-                            <ResizablePanel
-                              key={tab.id}
-                              style={{
-                                display: shouldShow ? "flex" : "none",
-                              }}
-                            >
-                              <webview
+                          return (
+                            <Fragment key={tab.id}>
+                              <ResizablePanel
                                 key={tab.id}
-                                ref={(el) => {
-                                  webviewRefs.current[tab.id] = el;
-                                }}
-                                src={tab.url}
-                                className="w-full h-full flex"
-                                partition="persist:QuickBrowse"
-                                allowpopups="true"
                                 style={{
-                                  pointerEvents: isResizing ? "none" : "auto",
+                                  display: shouldShow ? "flex" : "none",
                                 }}
-                                webpreferences="contextIsolation,sandbox"
-                              />
-                            </ResizablePanel>
+                              >
+                                <webview
+                                  key={tab.id}
+                                  ref={(el) => {
+                                    webviewRefs.current[tab.id] = el;
+                                  }}
+                                  src={tab.url}
+                                  className="w-full h-full flex"
+                                  partition="persist:QuickBrowse"
+                                  allowpopups="true"
+                                  style={{
+                                    pointerEvents: isResizing ? "none" : "auto",
+                                  }}
+                                  webpreferences="contextIsolation,sandbox"
+                                />
+                              </ResizablePanel>
 
-                            <ResizableHandle
-                              className="bg-zinc-900"
-                              onDragging={(isDragging) =>
-                                setIsResizing(isDragging)
-                              }
-                            />
-                          </Fragment>
-                        );
-                      })}
-                    </ResizablePanelGroup>
+                              <ResizableHandle
+                                className="bg-zinc-900"
+                                onDragging={(isDragging) =>
+                                  setIsResizing(isDragging)
+                                }
+                              />
+                            </Fragment>
+                          );
+                        })}
+                      </ResizablePanelGroup>
+                    </div>
                   );
                 })()
               : null}
