@@ -27,7 +27,6 @@ import type {
   tabGroup,
 } from "./types/browser";
 import Sidebar from "./UI/SideBar";
-import { blockedHostnames } from "./types/hostnames";
 import { Button } from "./components/ui/button";
 
 declare global {
@@ -369,11 +368,6 @@ export default function BrowserLayout() {
     };
   }, []);
 
-  const blockedUrl = (url: string) => {
-    const hostname = new URL(url).hostname;
-    return blockedHostnames.some((blocked) => hostname.includes(blocked)); // also checks for subdomains basically maps through some(all) and checks if its included
-  };
-
   // useEffect for sharing title changes, and url changes
   useEffect(() => {
     const handleWebViewEvents = () => {
@@ -383,7 +377,7 @@ export default function BrowserLayout() {
       const handleNavigate = (event: any, id: number, isInPage = false) => {
         let newUrl = event.url;
 
-        if (isInPage && blockedUrl(newUrl)) {
+        if (isInPage) {
           return;
         }
 
@@ -404,7 +398,6 @@ export default function BrowserLayout() {
 
         const lastUrl = lastProcessedUrls.current.get(id);
         if (lastUrl === newUrl) {
-          console.log("Stopped");
           return;
         }
 
