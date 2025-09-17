@@ -1426,23 +1426,7 @@ export default function Sidebar(props: SideBarProps) {
                         className="data-[state=checked]:bg-white/20"
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <h3 className="text-sm font-medium text-white">
-                          Allow Curosr
-                        </h3>
-                        <p className="text-xs text-white/70">
-                          View Cursor from People in the Session
-                        </p>
-                      </div>
-                      <Switch
-                        checked={allowShareCursor}
-                        onCheckedChange={() =>
-                          setAllowShareCursor(!allowShareCursor)
-                        }
-                        className="data-[state=checked]:bg-white/20"
-                      />
-                    </div>
+
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <h3 className="text-sm font-medium text-white">
@@ -1649,7 +1633,7 @@ export default function Sidebar(props: SideBarProps) {
                 >
                   Delete Search History
                 </Button>
-                <ScrollArea className="max-h-[600px] max-w-[500px] ">
+                <ScrollArea className="max-h-[600px] w-full ">
                   {history.map((history, index) => {
                     const url = new URL(history.url);
                     const domain = url.hostname.replace("www.", "");
@@ -1687,7 +1671,7 @@ export default function Sidebar(props: SideBarProps) {
                               <div className="font-medium text-white truncate">
                                 {serviceName}
                               </div>
-                              <div className="text-xs text-gray-400 dark:text-gray-400 truncate">
+                              <div className="text-xs text-gray-400 dark:text-gray-400 truncate max-w-[370px]">
                                 {history.url}
                               </div>
                             </div>

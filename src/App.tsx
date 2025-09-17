@@ -82,7 +82,7 @@ export default function BrowserLayout() {
   const [activeTabId, setActiveTabId] = useState<number>(0);
   const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
   const [shared, setShared] = useState<boolean>(false);
-  const [username, setUsername] = useState<string>("KreakxX");
+  const [username, setUsername] = useState<string>("Username");
   const [shareCursor, setShareCursor] = useState<boolean>(false);
   const wsRef = useRef<WebSocket | null>(null);
   const [watchTogether, setWatchTogether] = useState<boolean>(false);
@@ -163,8 +163,8 @@ export default function BrowserLayout() {
   const [allowTabsAdded, setAllowTabsAdded] = useState<boolean>(false);
   const [shareTabsAdded, setShareTabs] = useState<boolean>(false);
   const allowTabsRef = useRef(allowTabsAdded);
+  const lastProcessedUrls = useRef<Map<number, string>>(new Map());
 
-  // TAB GROUP
   const addOrRemoveYoutubePopUp = async (
     popUp: boolean,
     url: string,
@@ -380,18 +380,15 @@ export default function BrowserLayout() {
       const activeWebView = webviewRefs.current[activeTabId] as any;
       if (!activeWebView) return;
 
-      let lastUrl = "";
-      let count = 0;
       const handleNavigate = (event: any, id: number, isInPage = false) => {
-        if (isInPage && blockedUrl(url)) {
+        let newUrl = event.url;
+
+        if (isInPage && blockedUrl(newUrl)) {
           return;
         }
 
-        let newUrl = event.url;
-        count++;
-        if (newUrl == lastUrl) return;
-        if (count % 2 == 0) {
-          lastUrl = event.url;
+        if (newUrl.includes("youtube") && newUrl.includes("list")) {
+          return;
         }
 
         try {
@@ -399,10 +396,19 @@ export default function BrowserLayout() {
           url.searchParams.delete("zx");
           url.searchParams.delete("no_sw_cr");
           url.searchParams.delete("_");
+
           newUrl = url.toString();
         } catch (e) {
           newUrl = event.url;
         }
+
+        const lastUrl = lastProcessedUrls.current.get(id);
+        if (lastUrl === newUrl) {
+          console.log("Stopped");
+          return;
+        }
+
+        lastProcessedUrls.current.set(id, newUrl);
 
         if (id === activeTabId) {
           setCurrentUrl(newUrl);
@@ -690,6 +696,8 @@ export default function BrowserLayout() {
           "did-navigate-in-page",
           handleNavigateInPageActice
         );
+
+        lastProcessedUrls.current.clear();
       };
     };
 
