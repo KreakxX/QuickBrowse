@@ -158,6 +158,10 @@ interface SideBarProps {
   addTodoToStickyNote: (todo: string) => void;
   allowShareCursor: boolean;
   setAllowShareCursor: (allowShareCursor: boolean) => void;
+  allowTabsAdded: boolean;
+  setAllowTabsAdded: (allowTabsAdded: boolean) => void;
+  shareTabsAdded: boolean;
+  setShareTabsAdded: (shareTabsAdded: boolean) => void;
 }
 
 export default function Sidebar(props: SideBarProps) {
@@ -254,6 +258,10 @@ export default function Sidebar(props: SideBarProps) {
     addTodoToStickyNote,
     showStickyNote,
     setShowStickyNote,
+    allowTabsAdded,
+    setAllowTabsAdded,
+    shareTabsAdded,
+    setShareTabsAdded,
   } = props;
 
   const [todoInput, setTodoInput] = useState<string>("");
@@ -1367,6 +1375,57 @@ export default function Sidebar(props: SideBarProps) {
                   <Separator className="bg-white/20 my-6" />
 
                   <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-medium text-white">
+                          Share Tabs
+                        </h3>
+                        <p className="text-xs text-white/70">
+                          Share Tabs to the current Session
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shareTabsAdded}
+                        onCheckedChange={() =>
+                          setShareTabsAdded(!shareTabsAdded)
+                        }
+                        className="data-[state=checked]:bg-white/20"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-medium text-white">
+                          Allow Tabs
+                        </h3>
+                        <p className="text-xs text-white/70">
+                          Allow Tab adding and removing from the Session
+                        </p>
+                      </div>
+                      <Switch
+                        checked={allowTabsAdded}
+                        onCheckedChange={() =>
+                          setAllowTabsAdded(!allowTabsAdded)
+                        }
+                        className="data-[state=checked]:bg-white/20"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-sm font-medium text-white">
+                          Allow Curosr
+                        </h3>
+                        <p className="text-xs text-white/70">
+                          View Cursor from People in the Session
+                        </p>
+                      </div>
+                      <Switch
+                        checked={allowShareCursor}
+                        onCheckedChange={() =>
+                          setAllowShareCursor(!allowShareCursor)
+                        }
+                        className="data-[state=checked]:bg-white/20"
+                      />
+                    </div>
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <h3 className="text-sm font-medium text-white">

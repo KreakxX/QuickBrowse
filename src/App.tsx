@@ -160,8 +160,11 @@ export default function BrowserLayout() {
   const shareCursorRef = useRef(shareCursor);
   const [allowCursor, setAllowCursor] = useState<boolean>(false);
   const allowCursorRef = useRef(allowCursor);
-  // TAB GROUP
+  const [allowTabsAdded, setAllowTabsAdded] = useState<boolean>(false);
+  const [shareTabsAdded, setShareTabs] = useState<boolean>(false);
+  const allowTabsRef = useRef(allowTabsAdded);
 
+  // TAB GROUP
   const addOrRemoveYoutubePopUp = async (
     popUp: boolean,
     url: string,
@@ -332,6 +335,10 @@ export default function BrowserLayout() {
   useEffect(() => {
     allowCursorRef.current = allowCursor;
   }, [allowCursor]);
+
+  useEffect(() => {
+    allowTabsRef.current = allowTabsAdded;
+  }, [allowTabsAdded]);
 
   // UseEffect for handling connections with the websocket
   useEffect(() => {
@@ -740,22 +747,27 @@ export default function BrowserLayout() {
         setActiveTabIdSession(data.activeTabId);
         break;
       case "browser_tab_new":
-        setTabs((prev) => [
-          ...prev,
-          {
-            id: data.id,
-            url: data.url,
-            favIcon: data.favicon,
-          },
-        ]);
-        setNextId(data.nextId);
-        setActiveTabIdSession(data.activeTabId);
+        if (allowTabsRef.current) {
+          setTabs((prev) => [
+            ...prev,
+            {
+              id: data.id,
+              url: data.url,
+              favIcon: data.favicon,
+            },
+          ]);
+          setNextId(data.nextId);
+          setActiveTabIdSession(data.activeTabId);
+        }
         break;
 
       case "browser_tab_old":
-        setTabs((prev) => prev.filter((tab) => tab.id !== data.id));
-        setNextId(data.nextId);
-        setActiveTabIdSession(data.activeTabId);
+        if (allowTabsRef.current) {
+          setTabs((prev) => prev.filter((tab) => tab.id !== data.id));
+          setNextId(data.nextId);
+          setActiveTabIdSession(data.activeTabId);
+        }
+
         break;
 
       case "enableWatchTogether":
@@ -1348,17 +1360,19 @@ export default function BrowserLayout() {
       return;
     }
 
-    {
-      shared
-        ? wsRef.current.send(
-            JSON.stringify({
-              type: "add_browser_tab",
-              tab: newTab,
-              nextId: newNextId,
-              activeTabId: nextId,
-            })
-          )
-        : null;
+    if (shareTabsAdded) {
+      {
+        shared
+          ? wsRef.current.send(
+              JSON.stringify({
+                type: "add_browser_tab",
+                tab: newTab,
+                nextId: newNextId,
+                activeTabId: nextId,
+              })
+            )
+          : null;
+      }
     }
   };
 
@@ -1393,7 +1407,7 @@ export default function BrowserLayout() {
       return;
     }
 
-    if (shared) {
+    if (shared && shareTabsAdded) {
       wsRef.current.send(
         JSON.stringify({
           type: "remove_browser_tab",
@@ -1679,6 +1693,10 @@ export default function BrowserLayout() {
           setShowStickyNote={setShowStickyNote}
           allowShareCursor={allowCursor}
           setAllowShareCursor={setAllowCursor}
+          allowTabsAdded={allowTabsAdded}
+          setAllowTabsAdded={setAllowTabsAdded}
+          shareTabsAdded={shareTabsAdded}
+          setShareTabsAdded={setShareTabs}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}
