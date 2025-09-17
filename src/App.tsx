@@ -875,6 +875,8 @@ export default function BrowserLayout() {
       );
 
       setShared(false);
+      // if Watch together is still running
+      setWatchTogether(false);
       setSessionCode("");
       setSessionCreated(false);
     }
@@ -892,6 +894,8 @@ export default function BrowserLayout() {
       );
 
       setShared(false);
+      // if Watch together is still running
+      setWatchTogether(false);
       setSessionCode("");
       setSessionJoined(false);
     }
@@ -1324,6 +1328,18 @@ export default function BrowserLayout() {
         setCurrentUrl(nextTab?.url);
         setUrl(nextTab.url);
       }
+    }
+
+    if (
+      splitViewTabs.some(
+        (tab) => tab.baseTabId === id || tab.splitViewTabId === id
+      )
+    ) {
+      const filteredSplitViewTabs = splitViewTabs.filter(
+        (tab) => tab.baseTabId !== id && tab.splitViewTabId !== id
+      );
+
+      setSplitViewTabs(filteredSplitViewTabs);
     }
 
     const remainingTabs = tabs.filter((tab) => tab.id !== id);

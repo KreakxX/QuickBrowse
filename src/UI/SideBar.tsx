@@ -870,7 +870,9 @@ export default function Sidebar(props: SideBarProps) {
                                                       if (
                                                         tabGroup.title == "Base"
                                                       ) {
-                                                        closeTab(tab.id);
+                                                        closeTab(
+                                                          baseTab.splitViewTabId
+                                                        );
                                                       } else {
                                                         removeTabFromTabGroup(
                                                           tab.id
