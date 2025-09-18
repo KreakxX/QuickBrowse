@@ -182,8 +182,6 @@ export default function Sidebar(props: SideBarProps) {
     ActiveTabCurrentUrl,
     currentUrl,
     setCurrentUrl,
-    inputFocused,
-    setInputFocused,
     handleKeyDown,
     suggestions,
     addNewTab,

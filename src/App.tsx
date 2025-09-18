@@ -1774,7 +1774,7 @@ export default function BrowserLayout() {
             onClick={() => {
               setShowSideBar(!showSidebar);
             }}
-            className="h-6 w-4"
+            className="h-6 w-4 text-zinc-600"
           ></GripVertical>
         </div>
         <div className="flex-1 bg-zinc-900 relative min-h-screen">
