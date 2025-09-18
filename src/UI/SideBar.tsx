@@ -55,7 +55,6 @@ import {
   LayoutPanelTop,
   PictureInPicture,
   Clipboard,
-  HammerIcon,
   Ban,
 } from "lucide-react";
 
@@ -275,6 +274,7 @@ export default function Sidebar(props: SideBarProps) {
   } = props;
 
   const [todoInput, setTodoInput] = useState<string>("");
+  const [SearchInputOpen, setSearchInputOpen] = useState<boolean>(false);
 
   return (
     <>
@@ -356,8 +356,9 @@ export default function Sidebar(props: SideBarProps) {
                     alt=""
                   />
                   <Input
-                    onFocus={() => setInputFocused(true)}
-                    onBlur={() => setInputFocused(false)}
+                    onFocus={() => {
+                      setSearchInputOpen(true);
+                    }}
                     onKeyDown={handleKeyDown}
                     value={currentUrl}
                     onChange={(e) => {
@@ -368,46 +369,6 @@ export default function Sidebar(props: SideBarProps) {
                     autoFocus
                   />
                 </div>
-              </div>
-
-              <div className="max-h-[400px] overflow-y-auto">
-                {suggestions.length > 0 && inputFocused ? (
-                  <div className="p-2">
-                    {suggestions.map((suggestion, index) => {
-                      const url = new URL(suggestion);
-                      const domain = url.hostname.replace("www.", "");
-                      const serviceName = domain.split(".")[0];
-
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group"
-                          onClick={() => addNewTab(suggestion)}
-                        >
-                          <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
-                            <img
-                              src={`${url.origin}/favicon.ico`}
-                              alt={`${serviceName} favicon`}
-                              className="w-5 h-5 rounded-sm"
-                            />
-                            <div className="w-5 h-5 bg-zinc-700 rounded-sm items-center justify-center text-xs text-zinc-400 hidden">
-                              {serviceName.charAt(0).toUpperCase()}
-                            </div>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="text-white font-medium capitalize text-sm">
-                              {serviceName}
-                            </div>
-                            <div className="text-zinc-400 text-xs truncate">
-                              {suggestion}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null}
               </div>
 
               <div className="grid grid-cols-3 gap-2 mt-2">
@@ -1258,6 +1219,95 @@ export default function Sidebar(props: SideBarProps) {
               ))}
             </div>
           ) : null}
+          <Dialog
+            onOpenChange={() => {
+              setSearchInputOpen(false);
+            }}
+            open={SearchInputOpen}
+          >
+            <DialogContent
+              className="max-w-[425px] border-zinc-800  "
+              style={{ background: activeTheme.hex }}
+            >
+              <DialogClose
+                className="text-zinc-500 "
+                onClick={() => {
+                  setSearchInputOpen(false);
+                }}
+              >
+                <X className="h-5 w-5 bg-zinc-800 rounded-sm "></X>
+              </DialogClose>
+              <DialogHeader>
+                <DialogTitle className="text-white">Search</DialogTitle>
+                <DialogDescription>
+                  Search your suggestions or with Google
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex-row rounded-lg ">
+                <div className="flex rounded-lg  px-6 ">
+                  <img
+                    className="h-5 w-5 mt-2"
+                    src={
+                      ActiveTabCurrentUrl?.favIcon?.includes("google")
+                        ? "https://google.com/favicon.ico"
+                        : ActiveTabCurrentUrl?.favIcon
+                    }
+                    alt=""
+                  />
+                  <Input
+                    onKeyDown={handleKeyDown}
+                    value={currentUrl}
+                    onChange={(e) => {
+                      setCurrentUrl(e.target.value);
+                    }}
+                    className="bg-transparent border-none text-white placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:ring-offset-0 text-base"
+                    placeholder="Search..."
+                    autoFocus
+                  />
+                </div>
+                <Separator className="bg-zinc-800 mt-2 "></Separator>
+                <div className="max-h-[400px] overflow-y-auto mt-3">
+                  {suggestions.length > 0 ? (
+                    <div className="p-2">
+                      {suggestions.map((suggestion, index) => {
+                        const url = new URL(suggestion);
+                        const domain = url.hostname.replace("www.", "");
+                        const serviceName = domain.split(".")[0];
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer group"
+                            onClick={() => addNewTab(suggestion)}
+                          >
+                            <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center">
+                              <img
+                                src={`${url.origin}/favicon.ico`}
+                                alt={`${serviceName} favicon`}
+                                className="w-5 h-5 rounded-sm"
+                              />
+                              <div className="w-5 h-5 bg-zinc-700 rounded-sm items-center justify-center text-xs text-zinc-400 hidden">
+                                {serviceName.charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="text-white font-medium capitalize text-sm">
+                                {serviceName}
+                              </div>
+                              <div className="text-zinc-400 text-xs truncate max-w-[400px]">
+                                {suggestion}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Dialog>
             <DialogTrigger asChild>
               <Button
@@ -1917,12 +1967,11 @@ export default function Sidebar(props: SideBarProps) {
                               );
                               setAddNewTabSearchBarWorkspace(false);
                             }}
-                            className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2  "
+                            className="bg-zinc-900 hover:bg-zinc-800 p-6 rounded-lg mt-2 mb-2 w-full truncate  "
                           >
                             <Search></Search>
-                            <p className="text-xs truncate max-w-[100px]">
-                              {currentUrl} —— Search with Google
-                            </p>
+                            <p className="text-xs truncate">{currentUrl}</p>
+                            <p>— Search with Google</p>
                           </Button>
                         </div>
                       ) : (
