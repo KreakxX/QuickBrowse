@@ -1,4 +1,3 @@
-import { json } from 'stream/consumers';
 import WebSocket, { WebSocketServer } from 'ws';
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -76,6 +75,10 @@ wss.on('connection', (ws) => {
       case 'leave_session_client':
         leaveSessionAsclient(ws,message);
         break;
+      case 'kicked_user':
+        kickuser(ws,message);
+        break;
+
     }
   });
 
@@ -111,6 +114,25 @@ function scrolled (ws,message){
   }
 
   broadcastToSession(sessionCode,scrolledMessage,ws)
+}
+
+function kickuser (ws, message){
+  const sessionCode = ws.sessionCode;
+  if (!sessionCode || !sessions[sessionCode]) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      message: 'Du bist in keiner Session!'
+    }));
+    return;
+    } 
+
+  const kickedUserMessage = {
+    type: "kicked_message"
+  }
+  broadcastToSession(sessionCode,kickedUserMessage,ws)
+  sessions[sessionCode].clients = sessions[sessionCode].clients.filter((client) => client.username !== message.username)
+
+
 }
 
 function join_info(ws,message){

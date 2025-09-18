@@ -55,6 +55,8 @@ import {
   LayoutPanelTop,
   PictureInPicture,
   Clipboard,
+  HammerIcon,
+  Ban,
 } from "lucide-react";
 
 interface SideBarProps {
@@ -165,6 +167,7 @@ interface SideBarProps {
   showContextMenu: boolean;
   setShowContextMenu: (showContextMenu: boolean) => void;
   downloadImage: () => void;
+  kickUserFromSession: (username: string) => void;
 }
 
 export default function Sidebar(props: SideBarProps) {
@@ -268,6 +271,7 @@ export default function Sidebar(props: SideBarProps) {
     showContextMenu,
     setShowContextMenu,
     downloadImage,
+    kickUserFromSession,
   } = props;
 
   const [todoInput, setTodoInput] = useState<string>("");
@@ -575,20 +579,33 @@ export default function Sidebar(props: SideBarProps) {
                             <h1 className="text-white font-bold mb-3 mt-5">
                               Users in current Session
                             </h1>
-                            <div className="flex ml-5 mt-4 ">
+                            <div className="flex-col  mt-5  ">
                               {sessionUsers.map((user) => (
-                                <div className="relative">
-                                  <Avatar>
-                                    <AvatarFallback
-                                      style={{
-                                        backgroundColor: activeTheme?.secondary,
+                                <div className="relative mb-5 bg-zinc-900 rounded-lg p-2 ">
+                                  <div className="flex justify-between ">
+                                    <Avatar>
+                                      <AvatarFallback
+                                        style={{
+                                          backgroundColor: activeTheme?.hex,
+                                        }}
+                                        className="text-white"
+                                      >
+                                        {user?.slice(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <p className="text-white font-semibold">
+                                      {user}
+                                    </p>
+                                    <Button
+                                      className="bg-zinc-800 hover:bg-zinc-800"
+                                      onClick={() => {
+                                        kickUserFromSession(user);
                                       }}
-                                      className="text-white"
                                     >
-                                      {user?.slice(0, 2).toUpperCase()}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-zinc-900 rounded-full"></div>
+                                      <Ban className="text-white"></Ban>
+                                    </Button>
+                                  </div>
+                                  <div className="ml-5 h-3 w-3 bg-green-500 border-2 border-zinc-900 rounded-full"></div>
                                 </div>
                               ))}
                             </div>

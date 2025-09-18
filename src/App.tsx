@@ -166,7 +166,6 @@ export default function BrowserLayout() {
   const [imageUrl, setImageUrl] = useState<string>("");
   // tracks all processedUrls with Tab ID as key -> important for no redirects
   const lastProcessedUrls = useRef<Map<number, string>>(new Map());
-
   const addOrRemoveYoutubePopUp = async (
     popUp: boolean,
     url: string,
@@ -838,6 +837,11 @@ export default function BrowserLayout() {
       case "skipped_forward":
         skipForward(data.time);
         break;
+      case "kicked_message":
+        setShared(false);
+        setSessionJoined(false);
+        setWatchTogether(false);
+        break;
       case "leave_sessionMessage":
         toast(data.username + " has left the Session");
         setSessionUsers((prev) =>
@@ -920,6 +924,19 @@ export default function BrowserLayout() {
   };
 
   // SESSION
+  const kickUserFromSession = (username: string) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      alert("Not connected to server");
+      return;
+    }
+    wsRef.current.send(
+      JSON.stringify({
+        type: "kicked_user",
+        username: username,
+      })
+    );
+    setSessionUsers((prev) => prev.filter((user) => user !== username));
+  };
 
   // method for closing a Session
   const closeSession = () => {
@@ -1747,6 +1764,7 @@ export default function BrowserLayout() {
           showContextMenu={showContextMenu}
           setShowContextMenu={setShowContextMenu}
           downloadImage={downloadImage}
+          kickUserFromSession={kickUserFromSession}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}
@@ -1761,7 +1779,7 @@ export default function BrowserLayout() {
         </div>
         <div className="flex-1 bg-zinc-900 relative min-h-screen">
           <div className="w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
-            {activeTabId === activeTabIdSession && shared ? (
+            {activeTabId === activeTabIdSession && shared && allowCursor ? (
               <MousePointer2
                 color="#6366f1"
                 fill="#6366f1"
