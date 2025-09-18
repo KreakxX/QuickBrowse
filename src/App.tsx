@@ -28,7 +28,6 @@ import type {
 } from "./types/browser";
 import Sidebar from "./UI/SideBar";
 import { Button } from "./components/ui/button";
-
 declare global {
   interface Window {
     electronAPI?: {
@@ -66,6 +65,7 @@ declare global {
       deleteSavedTab: (id: number) => void;
       addNewYoutubePopup: (url: string) => void;
       removeYoutubePopup: () => void;
+      saveImage: (url: string) => void;
     };
   }
 }
@@ -162,6 +162,9 @@ export default function BrowserLayout() {
   const [allowTabsAdded, setAllowTabsAdded] = useState<boolean>(false);
   const [shareTabsAdded, setShareTabs] = useState<boolean>(false);
   const allowTabsRef = useRef(allowTabsAdded);
+  const [showContextMenu, setShowContextMenu] = useState<boolean>(false);
+  const [imageUrl, setImageUrl] = useState<string>("");
+  // tracks all processedUrls with Tab ID as key -> important for no redirects
   const lastProcessedUrls = useRef<Map<number, string>>(new Map());
 
   const addOrRemoveYoutubePopUp = async (
@@ -608,11 +611,46 @@ export default function BrowserLayout() {
         }, 1000);
       };
 
+      const handleImageClickingTracking = () => {
+        setTimeout(() => {
+          activeWebView
+            .executeJavaScript(
+              `
+       try {
+        
+          if (typeof window === 'undefined' || typeof document === 'undefined') {
+            throw new Error('Window or document not available');
+          }
+          
+              document.addEventListener('contextmenu', (event) =>{
+                const target = event.target;
+                if(target && target.tagName == "IMG"){
+                  const imgUrl = target.src;
+                  console.log("IMAGE_URL: ", imgUrl)
+                }
+              }, true);
+        } catch (error) {
+          console.error('Error in Image Context Menu:', error.message);
+        }
+      `
+            )
+            .catch((err: any) =>
+              console.error("Failed to inject Image Context Menu:", err)
+            );
+        }, 1000);
+      };
+
       activeWebView.addEventListener("did-finish-load", handleScrollTracking);
       activeWebView.addEventListener("dom-ready", handleScrollTracking);
 
       activeWebView.addEventListener("did-finish-load", handleMouseTracking);
       activeWebView.addEventListener("dom-ready", handleMouseTracking);
+
+      activeWebView.addEventListener(
+        "did-finish-load",
+        handleImageClickingTracking
+      );
+      activeWebView.addEventListener("dom-ready", handleImageClickingTracking);
 
       const handleConsoleMessage = (e: any) => {
         if (e.message.includes("SCROLL_DATA:")) {
@@ -653,6 +691,10 @@ export default function BrowserLayout() {
               })
             );
           }
+        } else if (e.message.includes("IMAGE_URL:")) {
+          const IMAGE_URL = e.message.replace("IMAGE_URL:", "");
+          setImageUrl(IMAGE_URL);
+          setShowContextMenu(true);
         }
       };
 
@@ -1340,6 +1382,10 @@ export default function BrowserLayout() {
     }
   };
 
+  const downloadImage = () => {
+    window.electronAPI?.saveImage(imageUrl);
+  };
+
   // method for adding a new Tab (default workspace)
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
@@ -1698,6 +1744,9 @@ export default function BrowserLayout() {
           setAllowTabsAdded={setAllowTabsAdded}
           shareTabsAdded={shareTabsAdded}
           setShareTabsAdded={setShareTabs}
+          showContextMenu={showContextMenu}
+          setShowContextMenu={setShowContextMenu}
+          downloadImage={downloadImage}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}

@@ -162,6 +162,9 @@ interface SideBarProps {
   setAllowTabsAdded: (allowTabsAdded: boolean) => void;
   shareTabsAdded: boolean;
   setShareTabsAdded: (shareTabsAdded: boolean) => void;
+  showContextMenu: boolean;
+  setShowContextMenu: (showContextMenu: boolean) => void;
+  downloadImage: () => void;
 }
 
 export default function Sidebar(props: SideBarProps) {
@@ -262,6 +265,9 @@ export default function Sidebar(props: SideBarProps) {
     setAllowTabsAdded,
     shareTabsAdded,
     setShareTabsAdded,
+    showContextMenu,
+    setShowContextMenu,
+    downloadImage,
   } = props;
 
   const [todoInput, setTodoInput] = useState<string>("");
@@ -1787,6 +1793,35 @@ export default function Sidebar(props: SideBarProps) {
                     ></Button>
                   ))}
                 </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={showContextMenu}
+              onOpenChange={() => {
+                setShowContextMenu(!showContextMenu);
+              }}
+            >
+              <DialogContent
+                style={{ backgroundColor: activeTheme?.hex }}
+                className="max-w-[425px] border-zinc-800"
+              >
+                <DialogClose asChild>
+                  <Button className="w-8 h-8">
+                    <X></X>
+                  </Button>
+                </DialogClose>
+                <DialogHeader>
+                  <DialogTitle className="text-white">Context Menu</DialogTitle>
+                  <DialogDescription>Download or View Image</DialogDescription>
+                </DialogHeader>
+
+                <Button
+                  onClick={() => {
+                    downloadImage();
+                  }}
+                >
+                  Download Image
+                </Button>
               </DialogContent>
             </Dialog>
             <Dialog

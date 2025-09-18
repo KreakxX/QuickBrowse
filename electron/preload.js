@@ -13,5 +13,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadSavedTab: () => ipcRenderer.invoke('savedTabs:load'),
   deleteSavedTab: (id) => ipcRenderer.invoke('savedTabs:delete',id),
   addNewYoutubePopup: (url)=> ipcRenderer.invoke('popup:create',url),
-  removeYoutubePopup: () => ipcRenderer.invoke("popup:close")
+  removeYoutubePopup: () => ipcRenderer.invoke("popup:close"),
+  saveImage: (url) => ipcRenderer.invoke("saveImage",url)
 })

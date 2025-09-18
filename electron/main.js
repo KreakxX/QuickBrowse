@@ -103,7 +103,12 @@ ipcMain.handle('get-cookies', async (_event, partition) => {
   return cookies;
 });
 
-
+ipcMain.handle("saveImage", (event,url)=>{
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) {
+    win.webContents.downloadURL(url); 
+  }
+})
 
 ipcMain.handle('history:save',(_event, url, favicon)=>{
   saveHistory(url,favicon);
