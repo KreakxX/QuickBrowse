@@ -4,11 +4,17 @@ QuickBrowse is the First Real Time Collaboration Browser with everything you nee
 
 # Landing Page:
 - https://quickbrowse.vercel.app/
-- 
+  
 # Features
 - Browsing Sessions with Friends
 - Shared Scrolling, Cursor, Tabs etc...
 - Watch together Functionality with Real Time updates on play/pause and skipping
+- SplitScreens
+- Screen Popups
+- Workspaces, Bookmarks
+- Built in Chat with Link embeddings
+- Custom Themes
+- Fully Private
 
 # Techstack
 ![](https://img.shields.io/badge/Typescript-black?style=flat-square&logo=Typescript)
