@@ -746,15 +746,23 @@ export default function Sidebar(props: SideBarProps) {
                                       style={{
                                         backgroundColor: activeTheme.secondary,
                                         borderColor:
-                                          tab.id === activeTabIdSession &&
-                                          shared
+                                          (activeSplitView.splitViewTabId ===
+                                            activeTabIdSession ||
+                                            activeSplitView.baseTabId ==
+                                              activeTabIdSession) &&
+                                          shared &&
+                                          allowTabsAdded
                                             ? activeTheme.acsent
                                             : tab.id === activeTabId
                                             ? "#52525b"
                                             : undefined,
                                       }}
                                       className={`w-full h-10 ${
-                                        tab.id === activeTabIdSession && shared
+                                        (activeSplitView.splitViewTabId ===
+                                          activeTabIdSession ||
+                                          activeSplitView.baseTabId) &&
+                                        shared &&
+                                        allowTabsAdded
                                           ? "border"
                                           : tab.id === activeTabId
                                           ? "border"
