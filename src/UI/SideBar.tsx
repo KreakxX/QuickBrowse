@@ -1057,20 +1057,19 @@ export default function Sidebar(props: SideBarProps) {
                                                 : "border-0"
                                             } flex items-center justify-start text-left px-3 rounded-lg`}
                                           >
-                                            {tab.favIcon && (
-                                              <img
-                                                src={
-                                                  tab.favIcon ||
-                                                  "/placeholder.svg"
-                                                }
-                                                alt="favicon"
-                                                className="w-5 h-5 mr-2"
-                                                onError={(e) =>
-                                                  (e.currentTarget.style.display =
-                                                    "none")
-                                                }
-                                              />
-                                            )}
+                                            <img
+                                              src={
+                                                tab.favIcon ||
+                                                tab.url + "/favicon.ico"
+                                              }
+                                              alt="favicon"
+                                              className="w-5 h-5 mr-2"
+                                              onError={(e) =>
+                                                (e.currentTarget.style.display =
+                                                  "none")
+                                              }
+                                            />
+
                                             <div className="truncate flex-1 text-sm mr-2 text-white">
                                               {tab.title || tab.url}
                                             </div>
