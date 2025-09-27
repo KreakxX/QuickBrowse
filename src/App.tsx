@@ -248,8 +248,6 @@ export default function BrowserLayout() {
     );
   };
 
-  // MAPPING
-
   // method for getting all the Tabs to map and prevent rerenders in the webview section
   const getAllTabs = () => {
     const normalTabs = tabs;
@@ -1486,13 +1484,27 @@ export default function BrowserLayout() {
     if (id == activeTabId) {
       const smallerTabs = tabs.filter((tab) => tab.id < id);
 
-      const nextTab = smallerTabs.reduce((prev, curr) =>
-        curr.id > prev.id ? curr : prev
-      );
-      if (nextTab) {
-        setActiveTabId(nextTab.id);
-        setCurrentUrl(nextTab?.url);
-        setUrl(nextTab.url);
+      if (smallerTabs.length > 0) {
+        const nextTab = smallerTabs.reduce((prev, curr) =>
+          curr.id > prev.id ? curr : prev
+        );
+        if (nextTab) {
+          setActiveTabId(nextTab.id);
+          setCurrentUrl(nextTab?.url);
+          setUrl(nextTab.url);
+        }
+      } else {
+        const higherTabs = tabs.filter((tab) => tab.id > id);
+        if (higherTabs.length > 0) {
+          const nextTab = higherTabs.reduce((prev, curr) =>
+            curr.id > prev.id ? curr : prev
+          );
+          if (nextTab) {
+            setActiveTabId(nextTab.id);
+            setCurrentUrl(nextTab?.url);
+            setUrl(nextTab.url);
+          }
+        }
       }
     }
 
