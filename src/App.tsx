@@ -225,6 +225,8 @@ export default function BrowserLayout() {
           : group
       )
     );
+
+    window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
     setActiveTabId(nextId);
     setUrl(url);
     setCurrentUrl(url);
