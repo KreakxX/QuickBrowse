@@ -1059,8 +1059,10 @@ export default function Sidebar(props: SideBarProps) {
                                           >
                                             <img
                                               src={
-                                                tab.favIcon ||
-                                                tab.url + "/favicon.ico"
+                                                tab.favIcon
+                                                  ? tab.favIcon
+                                                  : new URL(tab.url).origin +
+                                                    "/favicon.ico"
                                               }
                                               alt="favicon"
                                               className="w-5 h-5 mr-2"

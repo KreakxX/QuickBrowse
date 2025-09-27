@@ -386,6 +386,7 @@ export default function BrowserLayout() {
         let newUrl = event.url;
 
         if (isInPage) {
+          window.electronAPI?.updateTabURL(id, newUrl);
           return;
         }
 
