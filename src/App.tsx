@@ -1482,7 +1482,11 @@ export default function BrowserLayout() {
     if (!window.electronAPI) return;
     window.electronAPI.removeTab(id);
     if (id == activeTabId) {
-      const nextTab = tabs.find((tab) => tab.id == id - 1);
+      const smallerTabs = tabs.filter((tab) => tab.id < id);
+
+      const nextTab = smallerTabs.reduce((prev, curr) =>
+        curr.id > prev.id ? curr : prev
+      );
       if (nextTab) {
         setActiveTabId(nextTab.id);
         setCurrentUrl(nextTab?.url);
