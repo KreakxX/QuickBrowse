@@ -33,3 +33,19 @@ export function loadTabs(){
 export function deleteTab(id){
   db.prepare(`DELETE FROM Tabs where id = ?`).run(id)
 }
+
+export function updateTabURL(id, url){
+   db.prepare(`
+    UPDATE Tabs
+    SET url = ?
+    WHERE id = ?
+  `).run(url, id);
+}
+
+export function updateTabTItle(id, title){
+   db.prepare(`
+    UPDATE Tabs
+    SET title = ?
+    WHERE id = ?
+  `).run(title, id);
+}

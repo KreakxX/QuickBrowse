@@ -73,13 +73,15 @@ declare global {
           id: number;
           url: string;
           favicon: string;
+          title: string;
           timestamp: number;
         }>
       >;
+      updateTabURL: (id: number, url: string) => void;
+      updateTabTitle: (id: number, title: string) => void;
     };
   }
 }
-
 export default function BrowserLayout() {
   const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
   const [currentUrl, setCurrentUrl] = useState<string>(
@@ -424,6 +426,8 @@ export default function BrowserLayout() {
               : tab
           )
         );
+        console.log(newUrl);
+        window.electronAPI?.updateTabURL(id, newUrl);
 
         setTabGroups((groups) =>
           groups.map((group) => ({
@@ -480,6 +484,8 @@ export default function BrowserLayout() {
               : tab
           )
         );
+
+        window.electronAPI?.updateTabTitle(activeTabId, event.title);
 
         setTabGroups((groups) =>
           groups.map((group) => ({
@@ -924,6 +930,7 @@ export default function BrowserLayout() {
         break;
     }
   };
+
   // loading the savedTabs
   useEffect(() => {
     const loadTabs = async () => {
@@ -935,10 +942,11 @@ export default function BrowserLayout() {
         setNextId(count + 1);
         console.log(count);
       }
-      const fixedtabs = tabs.map(({ id, url, favicon }) => ({
+      const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
         id,
         url,
         favicon,
+        title,
       }));
 
       setTabs(fixedtabs);

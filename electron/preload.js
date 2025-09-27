@@ -17,5 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveImage: (url) => ipcRenderer.invoke("saveImage",url),
   addTab: (id,url,favicon) => ipcRenderer.invoke('tabs:add',id,url,favicon),
   removeTab: (id) => ipcRenderer.invoke('tabs:remove',id),
-  loadTabs: () => ipcRenderer.invoke('tabs:load')
+  loadTabs: () => ipcRenderer.invoke('tabs:load'),
+  updateTabURL: (id,url) => ipcRenderer.invoke('tabs:updateUrl',id,url),
+  updateTabTitle: (id, title) => ipcRenderer.invoke('tabs:updateTitle',id,title)
 })
