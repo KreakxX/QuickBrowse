@@ -7,6 +7,7 @@ import { saveHistory, loadHistory, deleteHistory } from './history.js';
 import fetch from 'node-fetch';
 import { addBookmark, loadBookmarks, removeBookMark } from './Bookmarks.js';
 import { addSavedTab, loadAllSavedTabs,deleteSavedTab } from './savedTabs.js';
+import { deleteTab, loadTabs, saveTab } from './tabs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -144,6 +145,18 @@ ipcMain.handle('savedTabs:load', (_event) =>{
 
 ipcMain.handle('savedTabs:delete', (_event,id)=>{
   return deleteSavedTab(id);
+})
+
+ipcMain.handle('tabs:add', (_event,id, url, favicon,title) => {
+  saveTab(id,url,favicon,title);
+})
+
+ipcMain.handle('tabs:remove', (_event,id)=>{
+  deleteTab(id);
+})
+
+ipcMain.handle('tabs:load',(_event)=>{
+  loadTabs();
 })
 
 app.whenReady().then(createWindow);

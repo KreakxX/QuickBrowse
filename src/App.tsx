@@ -66,6 +66,16 @@ declare global {
       addNewYoutubePopup: (url: string) => void;
       removeYoutubePopup: () => void;
       saveImage: (url: string) => void;
+      addTab: (id: number, url: string, favicon: string, title: String) => void;
+      removeTab: (id: number) => void;
+      loadTabs: () => Promise<
+        Array<{
+          id: number;
+          url: string;
+          favicon: string;
+          timestamp: number;
+        }>
+      >;
     };
   }
 }
@@ -739,8 +749,6 @@ export default function BrowserLayout() {
     return cleanup;
   }, [activeTabId, activeTabGroup, splitViewTabs, shared]);
 
-  // Method for sharing Mouse movement
-
   // method for handling messages and updating the client via websockets
   const handleWebSocketMessage = (data: any) => {
     switch (data.type) {
@@ -922,6 +930,27 @@ export default function BrowserLayout() {
         break;
     }
   };
+  // loading the savedTabs
+  useEffect(() => {
+    const loadTabs = async () => {
+      if (!window.electronAPI?.loadTabs) return;
+      const tabs = await window.electronAPI.loadTabs();
+      const count = tabs?.length;
+      if (count) {
+        setNextId(count);
+      }
+      const fixedtabs = tabs.map(({ id, url, favicon, timestamp }) => ({
+        id,
+        url,
+        favicon,
+        timestamp: timestamp,
+      }));
+
+      setTabs(fixedtabs);
+    };
+
+    loadTabs();
+  }, []);
 
   // SESSION
   const kickUserFromSession = (username: string) => {
