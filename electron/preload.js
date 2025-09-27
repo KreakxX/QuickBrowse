@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addNewYoutubePopup: (url)=> ipcRenderer.invoke('popup:create',url),
   removeYoutubePopup: () => ipcRenderer.invoke("popup:close"),
   saveImage: (url) => ipcRenderer.invoke("saveImage",url),
-  addTab: (id,url,favicon,title) => ipcRenderer.invoke('tabs:add',id,url,favicon,title),
+  addTab: (id,url,favicon) => ipcRenderer.invoke('tabs:add',id,url,favicon),
   removeTab: (id) => ipcRenderer.invoke('tabs:remove',id),
   loadTabs: () => ipcRenderer.invoke('tabs:load')
 })

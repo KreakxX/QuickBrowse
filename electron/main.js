@@ -147,8 +147,8 @@ ipcMain.handle('savedTabs:delete', (_event,id)=>{
   return deleteSavedTab(id);
 })
 
-ipcMain.handle('tabs:add', (_event,id, url, favicon,title) => {
-  saveTab(id,url,favicon,title);
+ipcMain.handle('tabs:add', (_event,id, url, favicon) => {
+  saveTab(id,url,favicon);
 })
 
 ipcMain.handle('tabs:remove', (_event,id)=>{
@@ -156,7 +156,7 @@ ipcMain.handle('tabs:remove', (_event,id)=>{
 })
 
 ipcMain.handle('tabs:load',(_event)=>{
-  loadTabs();
+  return loadTabs();
 })
 
 app.whenReady().then(createWindow);

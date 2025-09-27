@@ -16,12 +16,12 @@ db.prepare(`
 `).run();
 
 
-export function saveTab(id,url,favicon,title){
+export function saveTab(id,url,favicon){
   db.prepare(`
-    INSERT INTO Tabs (id,url,favicon,title,timestamp)
+    INSERT INTO Tabs (id,url,favicon,timestamp)
     VALUES (?, ?, ?, ?)
     `
-  ).run(id,url,favicon,title,new Date())
+  ).run(id,url,favicon,Date.now())
 }
 
 export function loadTabs(){

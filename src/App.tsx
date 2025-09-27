@@ -66,7 +66,7 @@ declare global {
       addNewYoutubePopup: (url: string) => void;
       removeYoutubePopup: () => void;
       saveImage: (url: string) => void;
-      addTab: (id: number, url: string, favicon: string, title: String) => void;
+      addTab: (id: number, url: string, favicon: string) => void;
       removeTab: (id: number) => void;
       loadTabs: () => Promise<
         Array<{
@@ -144,13 +144,7 @@ export default function BrowserLayout() {
   const [addNewTabSearchBarWorkspace, setAddNewTabSearchBarWorkspace] =
     useState<boolean>(false);
   const [title, setTitle] = useState<string>("");
-  const [tabs, setTabs] = useState<tab[]>([
-    {
-      id: 0,
-      url: "https://quickbrowse.vercel.app/",
-      favIcon: "https://quickbrowse.vercel.app/favicon.ico",
-    },
-  ]);
+  const [tabs, setTabs] = useState<tab[]>([]);
   const [showStickyNote, setShowStickyNote] = useState<boolean>(false);
   const [todos, setTodos] = useState<string[]>([]);
   const [sessionUsers, setSessionUsers] = useState<string[]>([]);
@@ -935,18 +929,21 @@ export default function BrowserLayout() {
     const loadTabs = async () => {
       if (!window.electronAPI?.loadTabs) return;
       const tabs = await window.electronAPI.loadTabs();
+      console.log(tabs);
       const count = tabs?.length;
       if (count) {
-        setNextId(count);
+        setNextId(count + 1);
+        console.log(count);
       }
-      const fixedtabs = tabs.map(({ id, url, favicon, timestamp }) => ({
+      const fixedtabs = tabs.map(({ id, url, favicon }) => ({
         id,
         url,
         favicon,
-        timestamp: timestamp,
       }));
 
       setTabs(fixedtabs);
+      setActiveTabId(fixedtabs[0].id);
+      console.log(fixedtabs);
     };
 
     loadTabs();
@@ -1435,6 +1432,8 @@ export default function BrowserLayout() {
   // method for adding a new Tab (default workspace)
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
+    if (!window.electronAPI) return;
+    window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
     const newTab = {
       id: nextId,
       url: url,
@@ -1471,6 +1470,8 @@ export default function BrowserLayout() {
 
   // method for closing a tab from (default workspace)
   const closeTab = (id: number) => {
+    if (!window.electronAPI) return;
+    window.electronAPI.removeTab(id);
     if (id == activeTabId) {
       const nextTab = tabs.find((tab) => tab.id == id - 1);
       if (nextTab) {
