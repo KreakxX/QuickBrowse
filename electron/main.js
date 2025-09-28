@@ -38,7 +38,7 @@ function createWindow() {
 
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadURL("http://localhost:5173");
+  win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
 
 }
 
@@ -175,7 +175,6 @@ app.on('window-all-closed', () => {
 
 app.on('web-contents-created', (event, webContents) => {
   webContents.setWindowOpenHandler(({ url }) => {
-    console.log('Window open attempt intercepted:', url);
     
     const mainWindow = BrowserWindow.getFocusedWindow();
     if (mainWindow) {

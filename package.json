@@ -10,7 +10,7 @@
     "electron": "electron electron/main.js",
     "preview": "vite preview",
     "start": "concurrently \"npm run dev\" \"npm run electron\"",
-    "dist": "electron-builder"
+    "dist": "npm run build && electron-builder"
   },
   "build": {
     "appId": "com.quickbrowse.quickbrowse",
@@ -41,6 +41,7 @@
     "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "electron-is-dev": "^3.0.1",
     "lucide-react": "^0.525.0",
     "next-themes": "^0.4.6",
     "node-fetch": "^3.3.2",

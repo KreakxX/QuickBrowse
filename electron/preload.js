@@ -6,6 +6,8 @@ ipcRenderer.on('create-new-tab', (event, url) => {
     newTabCallback(url);
   }
 });
+// getting called once so now two updates at same time
+
 contextBridge.exposeInMainWorld('electronAPI', {
   sendLog: (msg) => ipcRenderer.send('log', msg),
   getCookies: (partition) => ipcRenderer.invoke('get-cookies', partition),
@@ -30,6 +32,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     newTabCallback = callback;
   }
 })
+
+// overriding it down here
 
 
 

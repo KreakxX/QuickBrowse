@@ -84,7 +84,6 @@ declare global {
   }
 }
 export default function BrowserLayout() {
-  const [url, setUrl] = useState("https://quickbrowse.vercel.app/");
   const [currentUrl, setCurrentUrl] = useState<string>(
     "https://quickbrowse.vercel.app"
   );
@@ -239,7 +238,6 @@ export default function BrowserLayout() {
 
     window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
     setActiveTabId(nextId);
-    setUrl(url);
     setCurrentUrl(url);
     setNextId((prev) => prev + 1);
   };
@@ -821,7 +819,6 @@ export default function BrowserLayout() {
 
           if (data.tab.id === activeTabIdRef.current) {
             setCurrentUrl(data.tab.url);
-            setUrl(data.tab.url);
             const webview = webviewRefs.current[data.tab.id] as any;
             if (webview && webview.src !== data.tab.url) {
               console.log("Navigating webview to:", data.tab.url);
@@ -929,7 +926,6 @@ export default function BrowserLayout() {
           (tab: tab) => tab.id === data.activeTabId
         );
         if (activeTab) {
-          setUrl(activeTab.url);
           setCurrentUrl(activeTab.url);
         }
         break;
@@ -1378,8 +1374,6 @@ export default function BrowserLayout() {
   // method for searching the web when hitting enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      setUrl(currentUrl);
-
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
           tab.id === activeTabId
@@ -1458,7 +1452,6 @@ export default function BrowserLayout() {
     const allTabs = getAllTabs();
     const tab = allTabs.find((t) => t.id === tabId);
     if (tab) {
-      setUrl(tab.url);
       setCurrentUrl(tab.url);
     }
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -1479,7 +1472,6 @@ export default function BrowserLayout() {
     window.electronAPI?.saveImage(imageUrl);
   };
 
-  // method for adding a new Tab (default workspace)
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
     if (!window.electronAPI) return;
@@ -1495,7 +1487,6 @@ export default function BrowserLayout() {
     setActiveTabId(nextIDRef.current);
     const newNextId = nextIDRef.current + 1;
     setNextId(newNextId);
-    setUrl(url);
     setCurrentUrl(url);
 
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -1533,7 +1524,6 @@ export default function BrowserLayout() {
         if (nextTab) {
           setActiveTabId(nextTab.id);
           setCurrentUrl(nextTab?.url);
-          setUrl(nextTab.url);
         }
       } else {
         const higherTabs = tabs.filter((tab) => tab.id > id);
@@ -1544,7 +1534,6 @@ export default function BrowserLayout() {
           if (nextTab) {
             setActiveTabId(nextTab.id);
             setCurrentUrl(nextTab?.url);
-            setUrl(nextTab.url);
           }
         }
       }
