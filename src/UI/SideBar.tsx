@@ -65,7 +65,7 @@ interface SideBarProps {
   navigateForward: () => void;
   refresh: () => void;
   activeTabId: number;
-  ActiveTabCurrentUrl?: { favIcon?: string };
+  ActiveTabCurrentUrl?: tab;
   currentUrl: string;
   setCurrentUrl: (url: string) => void;
   inputFocused: boolean;
@@ -347,9 +347,12 @@ export default function Sidebar(props: SideBarProps) {
                   <img
                     className="h-5 w-5 mt-2"
                     src={
-                      ActiveTabCurrentUrl?.favIcon?.includes("google")
-                        ? "https://google.com/favicon.ico"
-                        : ActiveTabCurrentUrl?.favIcon
+                      ActiveTabCurrentUrl
+                        ? ActiveTabCurrentUrl.favIcon
+                          ? ActiveTabCurrentUrl.favIcon
+                          : new URL(ActiveTabCurrentUrl.url).origin +
+                            "/favicon.ico"
+                        : ""
                     }
                     alt=""
                   />
@@ -1255,9 +1258,12 @@ export default function Sidebar(props: SideBarProps) {
                   <img
                     className="h-5 w-5 mt-2"
                     src={
-                      ActiveTabCurrentUrl?.favIcon?.includes("google")
-                        ? "https://google.com/favicon.ico"
-                        : ActiveTabCurrentUrl?.favIcon
+                      ActiveTabCurrentUrl
+                        ? ActiveTabCurrentUrl.favIcon
+                          ? ActiveTabCurrentUrl.favIcon
+                          : new URL(ActiveTabCurrentUrl.url).origin +
+                            "/favicon.ico"
+                        : ""
                     }
                     alt=""
                   />
