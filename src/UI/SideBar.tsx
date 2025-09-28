@@ -167,6 +167,7 @@ interface SideBarProps {
   setShowContextMenu: (showContextMenu: boolean) => void;
   downloadImage: () => void;
   kickUserFromSession: (username: string) => void;
+  copyImage: () => void;
 }
 
 export default function Sidebar(props: SideBarProps) {
@@ -269,6 +270,7 @@ export default function Sidebar(props: SideBarProps) {
     setShowContextMenu,
     downloadImage,
     kickUserFromSession,
+    copyImage,
   } = props;
 
   const [todoInput, setTodoInput] = useState<string>("");
@@ -1924,7 +1926,7 @@ export default function Sidebar(props: SideBarProps) {
                 </DialogClose>
                 <DialogHeader>
                   <DialogTitle className="text-white">Context Menu</DialogTitle>
-                  <DialogDescription>Download or View Image</DialogDescription>
+                  <DialogDescription>Download or Copy Image</DialogDescription>
                 </DialogHeader>
 
                 <Button
@@ -1933,6 +1935,14 @@ export default function Sidebar(props: SideBarProps) {
                   }}
                 >
                   Download Image
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    copyImage();
+                  }}
+                >
+                  Copy Image
                 </Button>
               </DialogContent>
             </Dialog>

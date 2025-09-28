@@ -1472,6 +1472,38 @@ export default function BrowserLayout() {
     window.electronAPI?.saveImage(imageUrl);
   };
 
+  const copyImage = async () => {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const pngBlob = await convertToPng(blob);
+
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "image/png": pngBlob,
+      }),
+    ]);
+  };
+
+  const convertToPng = (blob: Blob): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d")!;
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob(resolve as BlobCallback, "image/png");
+      };
+
+      img.src = URL.createObjectURL(blob);
+    });
+  };
+
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
     if (!window.electronAPI) return;
@@ -1853,6 +1885,7 @@ export default function BrowserLayout() {
           setShowContextMenu={setShowContextMenu}
           downloadImage={downloadImage}
           kickUserFromSession={kickUserFromSession}
+          copyImage={copyImage}
         ></Sidebar>
         <div
           style={{ background: activeTheme.hex }}

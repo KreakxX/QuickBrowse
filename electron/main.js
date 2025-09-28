@@ -38,7 +38,8 @@ function createWindow() {
 
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
+  win.loadURL("http://localhost:5173")
+  // win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
 
 }
 
