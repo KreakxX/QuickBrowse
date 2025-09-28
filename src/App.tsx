@@ -246,6 +246,8 @@ export default function BrowserLayout() {
           : group
       )
     );
+    if (!window.electronAPI) return;
+    window.electronAPI.removeTab(id);
   };
 
   // method for getting all the Tabs to map and prevent rerenders in the webview section
@@ -290,7 +292,6 @@ export default function BrowserLayout() {
     }
   };
 
-  // USEMEMO for loading search suggetions (auto search complete)
   const suggestions = useMemo(() => {
     if (!currentUrl.trim()) return [];
     if (!currentUrl.trim() || currentUrl.length < 3) return [];
@@ -778,6 +779,7 @@ export default function BrowserLayout() {
                 : tab
             )
           );
+
           if (data.tab.id === activeTabIdRef.current) {
             setCurrentUrl(data.tab.url);
             setUrl(data.tab.url);
@@ -940,7 +942,7 @@ export default function BrowserLayout() {
       console.log(tabs);
       const count = tabs?.length;
       if (count) {
-        setNextId(count + 1);
+        setNextId(tabs[count - 1].id + 1);
         console.log(count);
       }
       const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
