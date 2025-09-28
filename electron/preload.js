@@ -1,5 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
+let newTabCallback = null;
 
+ipcRenderer.on('create-new-tab', (event, url) => {
+  if (newTabCallback) {
+    newTabCallback(url);
+  }
+});
 contextBridge.exposeInMainWorld('electronAPI', {
   sendLog: (msg) => ipcRenderer.send('log', msg),
   getCookies: (partition) => ipcRenderer.invoke('get-cookies', partition),
@@ -19,5 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeTab: (id) => ipcRenderer.invoke('tabs:remove',id),
   loadTabs: () => ipcRenderer.invoke('tabs:load'),
   updateTabURL: (id,url) => ipcRenderer.invoke('tabs:updateUrl',id,url),
-  updateTabTitle: (id, title) => ipcRenderer.invoke('tabs:updateTitle',id,title)
+  updateTabTitle: (id, title) => ipcRenderer.invoke('tabs:updateTitle',id,title),
+ setNewTabCallback: (callback) => {
+    newTabCallback = callback;
+  }
 })
+
+
+
+

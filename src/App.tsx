@@ -79,6 +79,7 @@ declare global {
       >;
       updateTabURL: (id: number, url: string) => void;
       updateTabTitle: (id: number, title: string) => void;
+      setNewTabCallback: (callback: (url: string) => void) => void;
     };
   }
 }
@@ -89,6 +90,7 @@ export default function BrowserLayout() {
   );
   const [showSidebar, setShowSideBar] = useState<boolean>(true);
   const [nextId, setNextId] = useState(1);
+  const nextIDRef = useRef(nextId);
   const [isResizing, setIsResizing] = useState<boolean>(false);
   const [activeTabId, setActiveTabId] = useState<number>(0);
   const [activeTabIdSession, setActiveTabIdSession] = useState<number>(0);
@@ -172,6 +174,15 @@ export default function BrowserLayout() {
   const [imageUrl, setImageUrl] = useState<string>("");
   // tracks all processedUrls with Tab ID as key -> important for no redirects
   const lastProcessedUrls = useRef<Map<number, string>>(new Map());
+
+  useEffect(() => {
+    if (window.electronAPI?.setNewTabCallback) {
+      window.electronAPI.setNewTabCallback((url) => {
+        addNewTab(url);
+      });
+    }
+  }, []);
+
   const addOrRemoveYoutubePopUp = async (
     popUp: boolean,
     url: string,
@@ -347,6 +358,10 @@ export default function BrowserLayout() {
   useEffect(() => {
     allowTabsRef.current = allowTabsAdded;
   }, [allowTabsAdded]);
+
+  useEffect(() => {
+    nextIDRef.current = nextId;
+  }, [nextId]);
 
   // UseEffect for handling connections with the websocket
   useEffect(() => {
@@ -743,6 +758,30 @@ export default function BrowserLayout() {
           handleNavigateInPageActice
         );
 
+        activeWebView.removeEventListener(
+          "did-navigate-in-page",
+          handleNavigateInPageActice
+        );
+        activeWebView.removeEventListener(
+          "did-finish-load",
+          handleScrollTracking
+        );
+        activeWebView.removeEventListener("dom-ready", handleScrollTracking);
+
+        activeWebView.removeEventListener(
+          "did-finish-load",
+          handleMouseTracking
+        );
+        activeWebView.removeEventListener("dom-ready", handleMouseTracking);
+
+        activeWebView.removeEventListener(
+          "did-finish-load",
+          handleImageClickingTracking
+        );
+        activeWebView.removeEventListener(
+          "dom-ready",
+          handleImageClickingTracking
+        );
         lastProcessedUrls.current.clear();
       };
     };
@@ -1444,16 +1483,17 @@ export default function BrowserLayout() {
   const addNewTab = (url: string) => {
     const origin = new URL(url).origin;
     if (!window.electronAPI) return;
-    window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
+    console.log("with ID: " + nextIDRef.current);
+    window.electronAPI?.addTab(nextIDRef.current, url, origin + "/favicon.ico");
     const newTab = {
-      id: nextId,
+      id: nextIDRef.current,
       url: url,
       favIcon: origin + "/favicon.ico",
     };
 
-    setTabs([...tabs, newTab]);
-    setActiveTabId(nextId);
-    const newNextId = nextId + 1;
+    setTabs((prevTabs) => [...prevTabs, newTab]);
+    setActiveTabId(nextIDRef.current);
+    const newNextId = nextIDRef.current + 1;
     setNextId(newNextId);
     setUrl(url);
     setCurrentUrl(url);

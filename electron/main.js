@@ -173,6 +173,19 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+app.on('web-contents-created', (event, webContents) => {
+  webContents.setWindowOpenHandler(({ url }) => {
+    console.log('Window open attempt intercepted:', url);
+    
+    const mainWindow = BrowserWindow.getFocusedWindow();
+    if (mainWindow) {
+      mainWindow.webContents.send('create-new-tab', url);
+    }
+    
+    return { action: 'deny' };
+  });
+});
+
 app.commandLine.appendSwitch("disable-features", "SitePerProcess,VizDisplayCompositor");
 app.commandLine.appendSwitch("disable-site-isolation-trials");
 
