@@ -66,7 +66,7 @@ declare global {
       addNewYoutubePopup: (url: string) => void;
       removeYoutubePopup: () => void;
       saveImage: (url: string) => void;
-      addTab: (url: string, favicon: string) => void;
+      addTab: (id: number, url: string, favicon: string) => void;
       removeTab: (id: number) => void;
       loadTabs: () => Promise<
         Array<{
@@ -236,7 +236,7 @@ export default function BrowserLayout() {
       )
     );
 
-    window.electronAPI?.addTab(url, origin + "/favicon.ico");
+    window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
     setActiveTabId(nextId);
     setCurrentUrl(url);
     setNextId((prev) => prev + 1);
@@ -968,31 +968,31 @@ export default function BrowserLayout() {
 
   // loading the savedTabs
 
-  // Ids not matching correctly so swtiching wont provide the neccessary effect which results in bad results -> rework completely
-  useEffect(() => {
-    const loadTabs = async () => {
-      if (!window.electronAPI?.loadTabs) return;
-      const tabs = await window.electronAPI.loadTabs();
-      console.log(tabs);
-      const count = tabs?.length;
-      if (count) {
-        setNextId(tabs[count - 1].id + 1);
-        console.log(count);
-      }
-      const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
-        id,
-        url,
-        favicon,
-        title,
-      }));
+  // Ids not matching correctly so swtiching wont provide the neccessary effect which results in bad results -> rework complet
+  // useEffect(() => {
+  //   const loadTabs = async () => {
+  //     if (!window.electronAPI?.loadTabs) return;
+  //     const tabs = await window.electronAPI.loadTabs();
+  //     console.log(tabs);
+  //     const count = tabs?.length;
+  //     if (count) {
+  //       setNextId(tabs[count - 1].id + 1);
+  //       console.log(count);
+  //     }
+  //     const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
+  //       id,
+  //       url,
+  //       favicon,
+  //       title,
+  //     }));
 
-      setTabs(fixedtabs);
-      setActiveTabId(fixedtabs[0].id);
-      console.log(fixedtabs);
-    };
+  //     setTabs(fixedtabs);
+  //     setActiveTabId(fixedtabs[0].id);
+  //     console.log(fixedtabs);
+  //   };
 
-    loadTabs();
-  }, []);
+  //   loadTabs();
+  // }, []);
 
   // SESSION
   const kickUserFromSession = (username: string) => {
@@ -1501,7 +1501,7 @@ export default function BrowserLayout() {
     const origin = new URL(url).origin;
     if (!window.electronAPI) return;
     console.log("with ID: " + nextIDRef.current);
-    window.electronAPI?.addTab(url, origin + "/favicon.ico");
+    window.electronAPI?.addTab(nextIDRef.current, url, origin + "/favicon.ico");
     const newTab = {
       id: nextIDRef.current,
       url: url,
@@ -1721,6 +1721,7 @@ export default function BrowserLayout() {
   const ActiveTabCurrentUrl = tabs.find((tab) => tab.id == activeTabId);
 
   const onDragEnd = (result: any) => {
+    console.log("Dragged");
     if (!result.destination) return;
 
     const { source, destination } = result;
@@ -1753,6 +1754,7 @@ export default function BrowserLayout() {
         newTabs.splice(destination.index, 0, removed); // fügt Element dort ein 0 means no element deleted
       }
       setTabs(newTabs);
+      console.log(newTabs);
     } else {
       setTabGroups((prevGroups) => {
         return prevGroups.map((group) => {
@@ -1985,7 +1987,7 @@ export default function BrowserLayout() {
                         }
                         className="w-full flex-1"
                       >
-                        {allTabs.map((tab) => {
+                        {allTabs.map((tab, index) => {
                           const isActiveTab = tab.id === activeTabId;
                           const isSplitViewTab =
                             activeSplitView &&
@@ -1995,7 +1997,8 @@ export default function BrowserLayout() {
                           return (
                             <Fragment key={tab.id}>
                               <ResizablePanel
-                                key={tab.id}
+                                id={`panel-${tab.id}`}
+                                order={index}
                                 style={{
                                   display: shouldShow ? "flex" : "none",
                                 }}

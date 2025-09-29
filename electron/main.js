@@ -36,8 +36,8 @@ function createWindow() {
 
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadURL("http://localhost:5173")
-  // win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
+  // win.loadURL("http://localhost:5173")
+  win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
 
 }
 
@@ -77,8 +77,6 @@ PopUpWindow = new BrowserWindow({
 
   
 }
-
-
 
 function removeNewYoutubePopUp(){
   if (PopUpWindow && !PopUpWindow.isDestroyed()) {
@@ -146,8 +144,8 @@ ipcMain.handle('savedTabs:delete', (_event,id)=>{
   return deleteSavedTab(id);
 })
 
-ipcMain.handle('tabs:add', (_event, url, favicon) => {
-  saveTab(url,favicon);
+ipcMain.handle('tabs:add', (_event,id, url, favicon) => {
+  saveTab(id,url,favicon);
 })
 
 ipcMain.handle('tabs:remove', (_event,id)=>{

@@ -666,6 +666,7 @@ export default function Sidebar(props: SideBarProps) {
             <DragDropContext onDragEnd={onDragEnd}>
               <div
                 ref={scrollContainerRef}
+                key={`tabs-${activeTabId}-${splitViewTabs.length}`}
                 className="flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
                 style={{
                   maxHeight: "65vh",
@@ -720,7 +721,7 @@ export default function Sidebar(props: SideBarProps) {
                         <div
                           ref={provided.innerRef}
                           {...provided.droppableProps}
-                          className="overflow-y-auto max-h-[65vh] scrollbar-hide px-2"
+                          className="  px-2"
                         >
                           {tabGroup.tabs.map((tab: any, index: any) => {
                             const activeSplitView = splitViewTabs.find(
@@ -728,8 +729,8 @@ export default function Sidebar(props: SideBarProps) {
                             );
                             return activeSplitView ? (
                               <Draggable
-                                key={tab.id.toString()}
-                                draggableId={tab.id.toString()}
+                                key={`tab-${tab.id}`}
+                                draggableId={`tab-${tab.id}`}
                                 index={index}
                               >
                                 {(provided: any, snapshot: any) => (
