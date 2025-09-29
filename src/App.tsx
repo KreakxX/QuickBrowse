@@ -968,31 +968,30 @@ export default function BrowserLayout() {
 
   // loading the savedTabs
 
-  // Ids not matching correctly so swtiching wont provide the neccessary effect which results in bad results -> rework complet
-  // useEffect(() => {
-  //   const loadTabs = async () => {
-  //     if (!window.electronAPI?.loadTabs) return;
-  //     const tabs = await window.electronAPI.loadTabs();
-  //     console.log(tabs);
-  //     const count = tabs?.length;
-  //     if (count) {
-  //       setNextId(tabs[count - 1].id + 1);
-  //       console.log(count);
-  //     }
-  //     const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
-  //       id,
-  //       url,
-  //       favicon,
-  //       title,
-  //     }));
+  useEffect(() => {
+    const loadTabs = async () => {
+      if (!window.electronAPI?.loadTabs) return;
+      const tabs = await window.electronAPI.loadTabs();
+      console.log(tabs);
+      const count = tabs?.length;
+      if (count) {
+        setNextId(tabs[count - 1].id + 1);
+        console.log(count);
+      }
+      const fixedtabs = tabs.map(({ id, url, favicon, title }) => ({
+        id,
+        url,
+        favicon,
+        title,
+      }));
 
-  //     setTabs(fixedtabs);
-  //     setActiveTabId(fixedtabs[0].id);
-  //     console.log(fixedtabs);
-  //   };
+      setTabs(fixedtabs);
+      setActiveTabId(fixedtabs[0].id);
+      console.log(fixedtabs);
+    };
 
-  //   loadTabs();
-  // }, []);
+    loadTabs();
+  }, []);
 
   // SESSION
   const kickUserFromSession = (username: string) => {
