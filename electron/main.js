@@ -13,8 +13,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createWindow() {
-    const transparentIcon = nativeImage.createEmpty();
-
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -38,8 +36,7 @@ function createWindow() {
 
   win.setMenuBarVisibility(false);
   win.setAutoHideMenuBar(true);
-  win.loadURL("http://localhost:5173")
-  // win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
+  win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
 
 }
 
@@ -176,8 +173,7 @@ app.on('window-all-closed', () => {
 
 app.on('web-contents-created', (event, webContents) => {
   webContents.setWindowOpenHandler(({ url }) => {
-    
-   
+
  const isOAuthPopup = 
       url.includes('accounts.google.com') ||
       url.includes('login.microsoftonline.com') ||
@@ -190,18 +186,7 @@ app.on('web-contents-created', (event, webContents) => {
     
     if (isOAuthPopup) {
       return {
-        action: 'allow',
-        overrideBrowserWindowOptions: {
-          width: 500,
-          height: 700,
-          modal: true,
-          parent: BrowserWindow.getFocusedWindow(),
-          webPreferences: {
-            partition: 'persist:QuickBrowse', 
-            contextIsolation: true,
-            sandbox: true
-          }
-        }
+        action: 'allow'
       };
     }
     
