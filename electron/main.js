@@ -177,8 +177,35 @@ app.on('window-all-closed', () => {
 app.on('web-contents-created', (event, webContents) => {
   webContents.setWindowOpenHandler(({ url }) => {
     
-    const mainWindow = BrowserWindow.getFocusedWindow();
-    if (mainWindow) {
+   
+ const isOAuthPopup = 
+      url.includes('accounts.google.com') ||
+      url.includes('login.microsoftonline.com') ||
+      url.includes('github.com/login') ||
+      url.includes('facebook.com/login') ||
+      url.includes('oauth') ||
+      url.includes('/auth/') ||
+      url.includes('signin') ||
+      url.includes('sso');
+    
+    if (isOAuthPopup) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 500,
+          height: 700,
+          modal: true,
+          parent: BrowserWindow.getFocusedWindow(),
+          webPreferences: {
+            partition: 'persist:QuickBrowse', 
+            contextIsolation: true,
+            sandbox: true
+          }
+        }
+      };
+    }
+    
+ if (mainWindow) {
       mainWindow.webContents.send('create-new-tab', url);
     }
     

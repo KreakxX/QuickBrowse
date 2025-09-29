@@ -681,11 +681,10 @@ export default function BrowserLayout() {
           const scrollData = JSON.parse(e.message.replace("SCROLL_DATA:", ""));
           console.log("Scroll detected:", scrollData);
           if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-            alert("Not connected to server");
             return;
           }
 
-          if (shareScrollingRef.current) {
+          if (shareScrollingRef.current && shared) {
             wsRef.current.send(
               JSON.stringify({
                 type: "scrolled",
@@ -699,12 +698,11 @@ export default function BrowserLayout() {
           const MOUSE_DATA = JSON.parse(e.message.replace("MOUSE_DATA:", ""));
 
           if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-            alert("Not connected to server");
             return;
           }
           console.log("Mouse Data", MOUSE_DATA);
 
-          if (shareCursorRef.current) {
+          if (shareCursorRef.current && shared) {
             wsRef.current.send(
               JSON.stringify({
                 type: "mouse_move",
@@ -931,7 +929,6 @@ export default function BrowserLayout() {
         break;
       case "join_watchtogether":
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-          alert("Not connected to server");
           return;
         }
 
@@ -998,7 +995,6 @@ export default function BrowserLayout() {
   // SESSION
   const kickUserFromSession = (username: string) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
     wsRef.current.send(
@@ -1014,7 +1010,6 @@ export default function BrowserLayout() {
   const closeSession = () => {
     if (sessionCreated && shared) {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        alert("Not connected to server");
         return;
       }
 
@@ -1034,7 +1029,6 @@ export default function BrowserLayout() {
 
     if (sessionJoined && shared) {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        alert("Not connected to server");
         return;
       }
       wsRef.current.send(
@@ -1055,7 +1049,6 @@ export default function BrowserLayout() {
   // method for creating a Session
   const createSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
 
@@ -1073,7 +1066,6 @@ export default function BrowserLayout() {
   // method for joining a Session
   const joinSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
     wsRef.current.send(
@@ -1151,7 +1143,6 @@ export default function BrowserLayout() {
     if (!skipped) return;
 
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
 
@@ -1252,8 +1243,11 @@ export default function BrowserLayout() {
       setWatchTogetherURL(embedURL);
     }
 
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
+    if (
+      !wsRef.current ||
+      wsRef.current.readyState !== WebSocket.OPEN ||
+      !shared
+    ) {
       return;
     }
 
@@ -1269,7 +1263,6 @@ export default function BrowserLayout() {
   // method for joining a watch together and getting the currenTime from host (asking host for currenttime and then updating client)
   const handleJoingWatchTogetherSession = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
     wsRef.current.send(
@@ -1354,7 +1347,6 @@ export default function BrowserLayout() {
   // method for sending a Chat Message to all other clients
   const sendChatMessage = () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
 
@@ -1455,7 +1447,6 @@ export default function BrowserLayout() {
       setCurrentUrl(tab.url);
     }
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
     if (shared) {
@@ -1522,7 +1513,6 @@ export default function BrowserLayout() {
     setCurrentUrl(url);
 
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
 
@@ -1587,7 +1577,6 @@ export default function BrowserLayout() {
     const tabToDelete = tabs.find((tab) => tab.id === id);
     setTabs(remainingTabs);
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      alert("Not connected to server");
       return;
     }
 
