@@ -2,7 +2,7 @@
 
 - QuickBrowse is a browser that is simple, powerful and collaborative
 
-![Alternativtext](https://github.com/KreakxX/QuickBrowse/public/Browserinterface.png)
+![Alternativtext](/public/Browserinterface.png)
 
 # Landing Page
 
