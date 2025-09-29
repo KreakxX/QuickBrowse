@@ -2,6 +2,12 @@
 
 - QuickBrowse is a browser that is simple, powerful and collaborative
 
+![Alternativtext](https://github.com/KreakxX/QuickBrowse/public/Browserinterface.png)
+
+# Landing Page
+
+https://quickbrowse.vercel.app/
+
 # Features
 
 - Browsing Sessions
@@ -17,6 +23,11 @@
 # Techstack
 
 - Javascript, Typescript with Electron
+
+# How to Use
+
+- either install on the landing page (not there yet)
+- or run `npm run dist `
 
 # Credits
 
