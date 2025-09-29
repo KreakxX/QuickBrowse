@@ -66,7 +66,7 @@ declare global {
       addNewYoutubePopup: (url: string) => void;
       removeYoutubePopup: () => void;
       saveImage: (url: string) => void;
-      addTab: (id: number, url: string, favicon: string) => void;
+      addTab: (url: string, favicon: string) => void;
       removeTab: (id: number) => void;
       loadTabs: () => Promise<
         Array<{
@@ -236,7 +236,7 @@ export default function BrowserLayout() {
       )
     );
 
-    window.electronAPI?.addTab(nextId, url, origin + "/favicon.ico");
+    window.electronAPI?.addTab(url, origin + "/favicon.ico");
     setActiveTabId(nextId);
     setCurrentUrl(url);
     setNextId((prev) => prev + 1);
@@ -967,6 +967,8 @@ export default function BrowserLayout() {
   };
 
   // loading the savedTabs
+
+  // Ids not matching correctly so swtiching wont provide the neccessary effect which results in bad results -> rework completely
   useEffect(() => {
     const loadTabs = async () => {
       if (!window.electronAPI?.loadTabs) return;
@@ -1499,7 +1501,7 @@ export default function BrowserLayout() {
     const origin = new URL(url).origin;
     if (!window.electronAPI) return;
     console.log("with ID: " + nextIDRef.current);
-    window.electronAPI?.addTab(nextIDRef.current, url, origin + "/favicon.ico");
+    window.electronAPI?.addTab(url, origin + "/favicon.ico");
     const newTab = {
       id: nextIDRef.current,
       url: url,

@@ -16,12 +16,21 @@ db.prepare(`
 `).run();
 
 
-export function saveTab(id,url,favicon){
+export function saveTab(url,favicon){
+   const row = db.prepare(`
+    SELECT id + 1 AS nextId
+    FROM Tabs
+    WHERE (id + 1) NOT IN (SELECT id FROM Tabs)
+    ORDER BY id
+    LIMIT 1
+  `).get();
+
+  const nextId = row?.nextId || 1; 
+
   db.prepare(`
-    INSERT INTO Tabs (id,url,favicon,timestamp)
+    INSERT INTO Tabs (id, url, favicon, timestamp)
     VALUES (?, ?, ?, ?)
-    `
-  ).run(id,url,favicon,Date.now())
+  `).run(nextId, url, favicon, Date.now());
 }
 
 export function loadTabs(){
