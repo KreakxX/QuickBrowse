@@ -11,9 +11,9 @@ import { deleteTab, loadTabs, saveTab, updateTabTItle, updateTabURL } from './ta
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+let mainWindow;
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     icon: path.join(__dirname, '../public/Logo.png'),
@@ -34,10 +34,10 @@ function createWindow() {
     },
   });
 
-  win.setMenuBarVisibility(false);
-  win.setAutoHideMenuBar(true);
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.setAutoHideMenuBar(true);
   // win.loadURL("http://localhost:5173")
-  win.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
+  mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));  // Production
 
 }
 
@@ -75,7 +75,6 @@ PopUpWindow = new BrowserWindow({
   });
   PopUpWindow.setAlwaysOnTop(true, "screen-saver");
 
-  
 }
 
 function removeNewYoutubePopUp(){
@@ -144,8 +143,8 @@ ipcMain.handle('savedTabs:delete', (_event,id)=>{
   return deleteSavedTab(id);
 })
 
-ipcMain.handle('tabs:add', (_event,id, url, favicon) => {
-  saveTab(id,url,favicon);
+ipcMain.handle('tabs:add', (_event, url, favicon) => {
+  saveTab(url,favicon);
 })
 
 ipcMain.handle('tabs:remove', (_event,id)=>{
@@ -172,7 +171,6 @@ app.on('window-all-closed', () => {
 
 app.on('web-contents-created', (event, webContents) => {
   webContents.setWindowOpenHandler(({ url }) => {
-
  const isOAuthPopup = 
       url.includes('accounts.google.com') ||
       url.includes('login.microsoftonline.com') ||
